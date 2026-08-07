@@ -1,0 +1,6 @@
+{
+  "name": "ARUME Coffee",
+  "description": "Website landing page modern, elegan, dan mewah untuk ARUME Coffee Shop.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-display {
+    font-family: 'Playfair Display', Georgia, serif;
+  }
+  .font-sans {
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0d0a07;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a2018;
+  border-radius: 4px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d4af37;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(22, 18, 15, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.18);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8), 0 0 15px 0 rgba(212, 175, 55, 0.05);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(32, 25, 20, 0.7) 0%, rgba(18, 14, 11, 0.85) 100%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(212, 175, 55, 0.45);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 25px rgba(212, 175, 55, 0.2);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #fff3d1 0%, #e5b869 40%, #c99700 80%, #9a6f00 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-gradient-btn {
+  background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
+  color: #0d0a07;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
+}
+
+.gold-gradient-btn:hover {
+  background: linear-gradient(135deg, #f0c84c 0%, #d4af37 100%);
+  box-shadow: 0 6px 28px rgba(212, 175, 55, 0.45);
+  transform: translateY(-2px);
+}
+
+.gold-border-glow {
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.18), inset 0 0 10px rgba(212, 175, 55, 0.1);
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 6s ease-in-out infinite;
+}
+
