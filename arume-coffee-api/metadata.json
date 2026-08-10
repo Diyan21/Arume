@@ -1,6 +1,0 @@
-{
-  "name": "Arume Coffee API",
-  "description": "Production-ready Node.js & Express REST API for Arume Coffee with Supabase PostgreSQL and Duitku Payment Gateway integration.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
