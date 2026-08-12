@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
-import { X, Coffee, ShoppingBag, Send, Plus, Minus, Star, Heart } from 'lucide-react';
+import { X, Coffee, ShoppingBag, Send, Plus, Minus, Star, Heart, CreditCard, Loader2 } from 'lucide-react';
 import { CoffeeMenuItem } from '../types';
 import { CONTACT_INFO } from '../data/coffeeData';
+
+declare global {
+  interface Window {
+    snap: any;
+  }
+}
 
 interface OrderModalProps {
   item: CoffeeMenuItem | null;
@@ -13,16 +19,82 @@ export const OrderModal: React.FC<OrderModalProps> = ({ item, onClose }) => {
   const [iceLevel, setIceLevel] = useState('Es Normal');
   const [sugarLevel, setSugarLevel] = useState('Gula Normal');
   const [notes, setNotes] = useState('');
+  
+  // State Form Pembeli & Loading
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!item) return null;
 
   const totalPrice = item.price * quantity;
   const formattedTotalPrice = `Rp${totalPrice.toLocaleString('id-ID')}`;
 
-  const handleSendWA = () => {
-    const message = `Halo ARUME Coffee! Saya mau pesan:%0A%0A- *${item.name}* (${quantity}x @ ${item.formattedPrice})%0A- Total: *${formattedTotalPrice}*%0A- Opsi: ${iceLevel}, ${sugarLevel}${notes ? `%0A- Catatan: ${notes}` : ''}%0A%0AMohon diproses ya. Terima kasih!`;
-    window.open(`${CONTACT_INFO.whatsappUrl}?text=${message}`, '_blank');
-    onClose();
+  // Handler Checkout Midtrans API
+  const handleCheckoutMidtrans = async () => {
+    if (!customerName || !customerEmail) {
+      alert('Mohon isi nama dan email Anda terlebih dahulu.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // 1. Tembak API Worker
+      const response = await fetch('https://arume-coffee-api.diyanaxl.workers.dev/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customer: {
+            name: customerName,
+            email: customerEmail,
+            phone: customerPhone || '081234567890',
+          },
+          items: [
+            {
+              product_id: item.id,
+              quantity: quantity,
+            },
+          ],
+          notes: `${iceLevel}, ${sugarLevel}${notes ? ` - ${notes}` : ''}`,
+        }),
+      });
+
+      const result = await response.json();
+
+      // 2. Eksekusi Popup Midtrans Snap
+      if (result.success && result.data?.payment?.token) {
+        window.snap.pay(result.data.payment.token, {
+          onSuccess: function (res: any) {
+            alert('Pembayaran Berhasil! Pesanan Anda sedang diproses.');
+            console.log('Success:', res);
+            onClose();
+          },
+          onPending: function (res: any) {
+            alert('Menunggu pembayaran diselesaikan.');
+            console.log('Pending:', res);
+            onClose();
+          },
+          onError: function (err: any) {
+            alert('Pembayaran gagal, silakan coba lagi.');
+            console.error('Error:', err);
+          },
+          onClose: function () {
+            alert('Anda membatalkan pembayaran.');
+          },
+        });
+      } else {
+        alert('Gagal membuat pesanan: ' + (result.message || 'Error Server'));
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Terjadi kesalahan koneksi ke server API.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,6 +143,31 @@ export const OrderModal: React.FC<OrderModalProps> = ({ item, onClose }) => {
           <p className="text-sm text-[#c2b4a3] font-light leading-relaxed">
             {item.description}
           </p>
+
+          {/* Form Data Pembeli */}
+          <div className="space-y-3 pt-2 border-t border-[#2a2018]">
+            <span className="text-xs font-bold text-[#d4af37] uppercase tracking-wider block">
+              Informasi Pemesan
+            </span>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="text"
+                placeholder="Nama Lengkap *"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="w-full bg-[#18120d] border border-[#d4af37]/30 rounded-xl px-3.5 py-2 text-sm text-white placeholder-[#605448] focus:outline-none focus:border-[#d4af37]"
+                required
+              />
+              <input
+                type="email"
+                placeholder="Email *"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                className="w-full bg-[#18120d] border border-[#d4af37]/30 rounded-xl px-3.5 py-2 text-sm text-white placeholder-[#605448] focus:outline-none focus:border-[#d4af37]"
+                required
+              />
+            </div>
+          </div>
 
           {/* Quantity Controls */}
           <div className="flex items-center justify-between p-3.5 rounded-2xl glass-panel border border-[#d4af37]/20">
@@ -154,11 +251,21 @@ export const OrderModal: React.FC<OrderModalProps> = ({ item, onClose }) => {
           </div>
 
           <button
-            onClick={handleSendWA}
-            className="gold-gradient-btn px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg"
+            onClick={handleCheckoutMidtrans}
+            disabled={loading}
+            className="gold-gradient-btn px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-lg disabled:opacity-50"
           >
-            <Send className="w-4 h-4 text-black" />
-            <span>Pesan via WhatsApp</span>
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 text-black animate-spin" />
+                <span>Memproses...</span>
+              </>
+            ) : (
+              <>
+                <CreditCard className="w-4 h-4 text-black" />
+                <span>Bayar Sekarang</span>
+              </>
+            )}
           </button>
         </div>
 
