@@ -41,8 +41,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({ item, onClose }) => {
     setLoading(true);
 
     try {
-      // 1. Tembak API Worker
-      const response = await fetch('https://arume-coffee-api.diyanaxl.workers.dev/api/orders', {
+      // 1. Tembak API Worker Terbaru (arume-coffee-api-2)
+      const response = await fetch('https://arume-coffee-api-2.diyanaxl.workers.dev/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ item, onClose }) => {
           },
           items: [
             {
-              product_id: item.id,
+              product_id: item.id || 'prod-01',
               quantity: quantity,
             },
           ],
@@ -66,7 +66,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({ item, onClose }) => {
       const result = await response.json();
 
       // 2. Eksekusi Popup Midtrans Snap
-      if (result.success && result.data?.payment?.token) {
+      if (response.ok && result.success && result.data?.payment?.token) {
         window.snap.pay(result.data.payment.token, {
           onSuccess: function (res: any) {
             alert('Pembayaran Berhasil! Pesanan Anda sedang diproses.');
@@ -87,11 +87,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({ item, onClose }) => {
           },
         });
       } else {
-        alert('Gagal membuat pesanan: ' + (result.message || 'Error Server'));
+        alert('Gagal membuat pesanan: ' + (result.message || result.error || 'Error Server'));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Checkout error:', error);
-      alert('Terjadi kesalahan koneksi ke server API.');
+      alert('Terjadi kesalahan koneksi ke server API: ' + (error?.message || error));
     } finally {
       setLoading(false);
     }
