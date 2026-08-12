@@ -150,7 +150,7 @@ export const CONTACT_INFO = {
   phoneDisplay: '0878-8122-7088',
   phoneRaw: '6287881227088',
   whatsappUrl: 'https://wa.me/6287881227088',
-  address: 'Jl. Utama Kopi No. 88, Area Premium Distrik ARUME',
-  openingHours: 'Buka Setiap Hari: 08:00 - 22:00 WIB',
-  instagram: '@arume.coffee'
+  address: 'Jl. Cluster Britania E8/10',
+  openingHours: 'Buka Setiap Saat: 18:00 - 22:00 WIB',
+  instagram: '@diyanaxl'
 };
