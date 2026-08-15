@@ -30,7 +30,7 @@ export const HeroSection: React.FC = () => {
         {/* Dark Overlay */}
         <div className="absolute inset-0 bg-black/45" />
 
-        {/* Gradient supaya tulisan tetap jelas */}
+        {/* Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/70" />
 
         {/* Gold Ambient */}
@@ -52,7 +52,7 @@ export const HeroSection: React.FC = () => {
         </div>
 
         {/* BRAND */}
-        <h1 className="font-display font-black leading-none mb-7">
+        <h1 className="font-display font-black leading-none mb-10">
 
           <span className="block text-6xl sm:text-7xl lg:text-9xl gold-gradient-text drop-shadow-2xl">
             ARUME
@@ -63,11 +63,6 @@ export const HeroSection: React.FC = () => {
           </span>
 
         </h1>
-
-        {/* TAGLINE */}
-        <p className="max-w-2xl text-lg sm:text-xl lg:text-2xl text-white/90 font-light leading-relaxed mb-10 drop-shadow-lg">
-          Nikmati Kopi Berkualitas dengan Rasa Premium Setiap Hari.
-        </p>
 
         {/* BUTTONS */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
