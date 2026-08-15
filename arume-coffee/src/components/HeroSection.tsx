@@ -27,88 +27,108 @@ export const HeroSection: React.FC = () => {
           <source src="/videos/arume-hero.mp4" type="video/mp4" />
         </video>
 
-        {/* Dark Overlay */}
-        <div className="absolute inset-0 bg-black/45" />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-black/35" />
 
-        {/* Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/20 to-black/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/10 to-black/65" />
 
-        {/* Gold Ambient */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#d4af37]/5 via-transparent to-[#d4af37]/5" />
       </div>
 
       {/* CONTENT */}
-      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center">
 
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-black/30 backdrop-blur-md border border-[#d4af37]/30 mb-8">
+        <div
+          className="
+            inline-flex
+            items-center
+            gap-2
+            px-4
+            py-2
+            rounded-full
+            bg-black/25
+            backdrop-blur-md
+            border
+            border-[#d4af37]/30
+            mb-8
+          "
+        >
           <Sparkles className="w-4 h-4 text-[#e5b869]" />
 
           <span className="text-xs sm:text-sm font-medium tracking-wide text-[#f0e6d2]">
             Authentic Indonesian Premium Coffee Blend
           </span>
 
-          <span className="w-2 h-2 rounded-full bg-[#d4af37]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]" />
         </div>
 
-        {/* BRAND */}
-        <h1 className="font-display font-black leading-none mb-10">
-
-          <span className="block text-6xl sm:text-7xl lg:text-9xl gold-gradient-text drop-shadow-2xl">
-            ARUME
-          </span>
-
-          <span className="block text-xl sm:text-3xl lg:text-4xl font-sans font-light tracking-[0.35em] text-[#d4af37] mt-5 uppercase">
-            Coffee Shop
-          </span>
-
-        </h1>
-
         {/* BUTTONS */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <div className="flex flex-row items-center justify-center gap-3">
 
+          {/* LIHAT MENU */}
           <a
             href="#menu"
             className="
-              w-full sm:w-auto
-              px-8 py-4
+              px-5
+              py-2.5
               rounded-full
-              bg-black/30
+              bg-black/20
               backdrop-blur-md
-              border border-[#d4af37]/40
-              hover:border-[#d4af37]
+              border
+              border-[#d4af37]/50
               text-white
+              text-sm
               font-semibold
-              flex items-center justify-center gap-3
-              transition-all duration-300
-              hover:bg-black/50
+              flex
+              items-center
+              justify-center
+              gap-2
+              transition-all
+              duration-300
+              hover:bg-black/45
+              hover:border-[#d4af37]
+              hover:scale-[1.03]
               group
             "
           >
-            <Coffee className="w-5 h-5 text-[#e5b869]" />
+            <Coffee className="w-4 h-4 text-[#e5b869]" />
 
             <span>Lihat Menu</span>
 
-            <ArrowRight className="w-4 h-4 text-[#e5b869] group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-3.5 h-3.5 text-[#e5b869] group-hover:translate-x-1 transition-transform" />
           </a>
 
+          {/* PESAN SEKARANG */}
           <a
             href={CONTACT_INFO.whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="
-              w-full sm:w-auto
-              gold-gradient-btn
-              px-9 py-4
+              px-5
+              py-2.5
               rounded-full
-              text-base
-              font-bold
-              flex items-center justify-center gap-3
-              shadow-xl
+              bg-[#d4af37]/15
+              backdrop-blur-md
+              border
+              border-[#d4af37]/60
+              text-[#f3cf63]
+              text-sm
+              font-semibold
+              flex
+              items-center
+              justify-center
+              gap-2
+              transition-all
+              duration-300
+              hover:bg-[#d4af37]/30
+              hover:border-[#e5b869]
+              hover:text-white
+              hover:scale-[1.03]
               group
             "
           >
-            <MessageCircle className="w-5 h-5 text-black group-hover:scale-110 transition-transform" />
+            <MessageCircle className="w-4 h-4" />
 
             <span>Pesan Sekarang</span>
           </a>
@@ -117,9 +137,9 @@ export const HeroSection: React.FC = () => {
 
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll Indicator */}
       <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-10">
-        <div className="w-[1px] h-12 bg-gradient-to-b from-[#d4af37] to-transparent" />
+        <div className="w-[1px] h-10 bg-gradient-to-b from-[#d4af37] to-transparent" />
       </div>
 
     </section>
