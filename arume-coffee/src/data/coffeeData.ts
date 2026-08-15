@@ -1,7 +1,6 @@
 import { CoffeeMenuItem, PaymentMethodItem } from '../types';
 
 export const COFFEE_MENU: CoffeeMenuItem[] = [
-export const COFFEE_MENU: CoffeeMenuItem[] = [
   {
     id: 'arumeya-aren-latte',
     name: 'Arumeya Aren Latte',
