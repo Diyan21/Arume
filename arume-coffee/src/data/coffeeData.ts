@@ -1,67 +1,73 @@
 import { CoffeeMenuItem, PaymentMethodItem } from '../types';
 
 export const COFFEE_MENU: CoffeeMenuItem[] = [
+export const COFFEE_MENU: CoffeeMenuItem[] = [
   {
-    id: 'kopi-gula-aren',
-    name: 'Kopi Gula Aren',
-    description: 'Espresso Arabica pilihan dipadu gula aren murni organik dan susu segar creamy.',
+    id: 'arumeya-aren-latte',
+    name: 'Arumeya Aren Latte',
+    description:
+      'Espresso pilihan berpadu dengan susu creamy dan manis lembut gula aren, menghadirkan aroma hangat khas Arumeya.',
     price: 15000,
     formattedPrice: 'Rp15.000',
-    image: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=800&q=80',
+    image: '/images/menu/arumeya-aren-latte.jpg',
     category: 'Signature',
     rating: 4.9,
     reviewsCount: 342,
     isBestSeller: true,
-    tags: ['Best Seller', 'Gula Aren Asli', 'Sweet & Creamy']
+    tags: ['Signature', 'Gula Aren', 'Creamy']
   },
   {
-    id: 'kopi-butterscotch',
-    name: 'Kopi Butterscotch',
-    description: 'Espresso kaya rasa dengan paduan aroma butterscotch gurih, karamel lezat, & milk foam.',
+    id: 'arumeya-butterscotch',
+    name: 'Arumeya Butterscotch',
+    description:
+      'Espresso dengan sentuhan butterscotch lembut dan aroma karamel yang hangat, creamy, dan elegan.',
     price: 18000,
     formattedPrice: 'Rp18.000',
-    image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=800&q=80',
+    image: '/images/menu/arumeya-butterscotch.jpg',
     category: 'Signature',
     rating: 4.9,
     reviewsCount: 289,
     isBestSeller: true,
-    tags: ['Favorite', 'Rich Butterscotch', 'Creamy']
+    tags: ['Favorite', 'Butterscotch', 'Creamy']
   },
   {
-    id: 'kopi-hazelnut',
-    name: 'Kopi Hazelnut',
-    description: 'Perpaduan espresso mantap dan aroma hazelnut nutty khas dengan susu yang lembut.',
+    id: 'arumeya-hazelnut-latte',
+    name: 'Arumeya Hazelnut Latte',
+    description:
+      'Latte lembut dengan karakter espresso dan aroma hazelnut yang nutty, harum, dan terasa hangat di setiap tegukan.',
     price: 18000,
     formattedPrice: 'Rp18.000',
-    image: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=800&q=80',
+    image: '/images/menu/arumeya-hazelnut-latte.jpg',
     category: 'Specialty',
     rating: 4.8,
     reviewsCount: 210,
-    tags: ['Nutty Flavor', 'Smooth Finish']
+    tags: ['Hazelnut', 'Nutty', 'Smooth']
   },
   {
-    id: 'kopi-banana-latte',
-    name: 'Kopi Banana Latte',
-    description: 'Kombinasi susu pisang manis alami creamy dengan shot espresso segar yang unik.',
+    id: 'arumeya-banana-latte',
+    name: 'Arumeya Banana Latte',
+    description:
+      'Perpaduan espresso, susu creamy, dan sentuhan banana yang lembut untuk rasa unik, ringan, dan menyenangkan.',
     price: 18000,
     formattedPrice: 'Rp18.000',
-    image: 'https://images.unsplash.com/photo-1534778101976-62847782c213?auto=format&fit=crop&w=800&q=80',
+    image: '/images/menu/arumeya-banana-latte.jpg',
     category: 'Specialty',
     rating: 4.8,
     reviewsCount: 178,
-    tags: ['Unique Taste', 'Banana Cream']
+    tags: ['Banana', 'Creamy', 'Unique']
   },
   {
-    id: 'americano',
-    name: 'Americano',
-    description: 'Kopi hitam klasik hasil ekstraksi espresso murni 100% biji pilihan khas ARUME.',
+    id: 'arumeya-americano',
+    name: 'Arumeya Americano',
+    description:
+      'Espresso murni dengan karakter kopi yang bersih, aromatik, dan bold untuk menikmati rasa asli kopi ARUME.',
     price: 10000,
     formattedPrice: 'Rp10.000',
-    image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',
+    image: '/images/menu/arumeya-americano.jpg',
     category: 'Classics',
     rating: 4.9,
     reviewsCount: 415,
-    tags: ['Classic Brew', '100% Arabica', 'Zero Sugar Option']
+    tags: ['Classic', 'Bold', 'No Milk']
   }
 ];
 
