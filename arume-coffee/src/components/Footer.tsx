@@ -336,7 +336,7 @@ export const Footer: React.FC = () => {
 
         </div>
 
-        {/* COPYRIGHT */}
+        {/* LEGAL & COPYRIGHT */}
         <div
           className="
             pt-8
@@ -344,18 +344,70 @@ export const Footer: React.FC = () => {
             flex-col
             sm:flex-row
             items-center
+            sm:items-end
             justify-between
-            gap-4
+            gap-6
             text-xs
-            text-[#a99a8d]
           "
         >
 
-          <p>
-            Copyright © 2026 ARUME Coffee.
-          </p>
+          {/* COMPANY LEGAL INFO */}
+          <div
+            className="
+              space-y-1.5
+              text-center
+              sm:text-left
+            "
+          >
+            <p
+              className="
+                text-[#d4af37]
+                font-semibold
+                tracking-wide
+              "
+            >
+              PT. ARUME PUTRA PERMANA
+            </p>
 
-          <p className="flex items-center gap-1">
+            <div
+              className="
+                flex
+                flex-col
+                sm:flex-row
+                sm:items-center
+                gap-1
+                sm:gap-3
+                text-[#8f8175]
+              "
+            >
+              <span>
+                NIB: 2506260094645
+              </span>
+
+              <span className="hidden sm:inline text-[#d4af37]/40">
+                •
+              </span>
+
+              <span>
+                AHU: AHU-A097591.AH.01.30.Tahun 2026
+              </span>
+            </div>
+
+            <p className="text-[#a99a8d] pt-1">
+              Copyright © 2026 ARUME Coffee. All Rights Reserved.
+            </p>
+          </div>
+
+          {/* MADE WITH LOVE */}
+          <p
+            className="
+              flex
+              items-center
+              gap-1
+              text-[#a99a8d]
+              whitespace-nowrap
+            "
+          >
             <span>Made with</span>
 
             <Heart
@@ -367,6 +419,8 @@ export const Footer: React.FC = () => {
                 animate-pulse
               "
             />
+
+            <span>by ARUME</span>
           </p>
 
         </div>
