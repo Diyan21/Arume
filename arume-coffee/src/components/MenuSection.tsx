@@ -15,16 +15,28 @@ interface MenuSectionProps {
 export const MenuSection: React.FC<MenuSectionProps> = ({
   onSelectMenu,
 }) => {
-  const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [activeMenu, setActiveMenu] = useState<string>('all');
 
-  const categories = ['All', 'Signature', 'Specialty', 'Classics'];
+  /*
+    Selection otomatis mengikuti isi COFFEE_MENU.
+    Jadi kalau nama menu di coffeeData berubah,
+    tombol selection ikut berubah juga.
+  */
+  const menuFilters = [
+    {
+      id: 'all',
+      label: 'Semua Arumeya',
+    },
+    ...COFFEE_MENU.map((item) => ({
+      id: item.id,
+      label: item.name,
+    })),
+  ];
 
   const filteredMenu =
-    activeCategory === 'All'
+    activeMenu === 'all'
       ? COFFEE_MENU
-      : COFFEE_MENU.filter(
-          (item) => item.category === activeCategory
-        );
+      : COFFEE_MENU.filter((item) => item.id === activeMenu);
 
   const coffeeBeans = [
     { top: '8%', left: '3%', rotate: '-25deg', scale: 0.85 },
@@ -40,53 +52,85 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
 
   return (
     <section
-  id="menu"
-  className="
-    py-20
-    sm:py-24
-    relative
-    overflow-hidden
-    bg-[#f6efe5]
-  "
-  style={{
-    backgroundImage: `
-      radial-gradient(circle at 15% 20%, rgba(92,64,42,0.09) 0px, rgba(92,64,42,0.09) 1px, transparent 1.8px),
-      radial-gradient(circle at 75% 25%, rgba(184,134,11,0.08) 0px, rgba(184,134,11,0.08) 1.2px, transparent 2px),
-      radial-gradient(circle at 35% 70%, rgba(120,90,60,0.07) 0px, rgba(120,90,60,0.07) 1px, transparent 1.8px),
-      radial-gradient(circle at 85% 80%, rgba(80,55,38,0.06) 0px, rgba(80,55,38,0.06) 1.5px, transparent 2.2px),
+      id="menu"
+      className="
+        py-20
+        sm:py-24
+        relative
+        overflow-hidden
+        bg-[#f6efe5]
+      "
+      style={{
+        backgroundImage: `
+          radial-gradient(
+            circle at 15% 20%,
+            rgba(92,64,42,0.09) 0px,
+            rgba(92,64,42,0.09) 1px,
+            transparent 1.8px
+          ),
 
-      radial-gradient(ellipse at 25% 40%, rgba(120,90,65,0.035) 0%, transparent 35%),
-      radial-gradient(ellipse at 80% 65%, rgba(184,134,11,0.03) 0%, transparent 35%),
+          radial-gradient(
+            circle at 75% 25%,
+            rgba(184,134,11,0.08) 0px,
+            rgba(184,134,11,0.08) 1.2px,
+            transparent 2px
+          ),
 
-      linear-gradient(
-        115deg,
-        transparent 0%,
-        rgba(126,96,68,0.035) 28%,
-        transparent 31%,
-        transparent 57%,
-        rgba(184,134,11,0.03) 60%,
-        transparent 64%
-      ),
+          radial-gradient(
+            circle at 35% 70%,
+            rgba(120,90,60,0.07) 0px,
+            rgba(120,90,60,0.07) 1px,
+            transparent 1.8px
+          ),
 
-      linear-gradient(
-        to bottom,
-        #f2e8da 0%,
-        #fbf7f1 45%,
-        #f6efe5 100%
-      )
-    `,
-    backgroundSize: `
-      28px 28px,
-      38px 38px,
-      48px 48px,
-      62px 62px,
-      100% 100%,
-      100% 100%,
-      100% 100%,
-      100% 100%
-    `,
-  }}
->
+          radial-gradient(
+            circle at 85% 80%,
+            rgba(80,55,38,0.06) 0px,
+            rgba(80,55,38,0.06) 1.5px,
+            transparent 2.2px
+          ),
+
+          radial-gradient(
+            ellipse at 25% 40%,
+            rgba(120,90,65,0.035) 0%,
+            transparent 35%
+          ),
+
+          radial-gradient(
+            ellipse at 80% 65%,
+            rgba(184,134,11,0.03) 0%,
+            transparent 35%
+          ),
+
+          linear-gradient(
+            115deg,
+            transparent 0%,
+            rgba(126,96,68,0.035) 28%,
+            transparent 31%,
+            transparent 57%,
+            rgba(184,134,11,0.03) 60%,
+            transparent 64%
+          ),
+
+          linear-gradient(
+            to bottom,
+            #f2e8da 0%,
+            #fbf7f1 45%,
+            #f6efe5 100%
+          )
+        `,
+        backgroundSize: `
+          28px 28px,
+          38px 38px,
+          48px 48px,
+          62px 62px,
+          100% 100%,
+          100% 100%,
+          100% 100%,
+          100% 100%
+        `,
+      }}
+    >
       {/* GOLD AMBIENT */}
       <div
         className="
@@ -185,7 +229,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
         "
       >
         {/* HEADER */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
+        <div className="text-center max-w-4xl mx-auto mb-14">
 
           {/* BADGE */}
           <div
@@ -196,7 +240,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
               px-4
               py-2
               rounded-full
-              bg-white/60
+              bg-white/65
               backdrop-blur-md
               border
               border-[#d4af37]/30
@@ -216,7 +260,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                 uppercase
               "
             >
-              Pilihan Rasa Terbaik
+              Arumeya Collection
             </span>
           </div>
 
@@ -233,9 +277,9 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
               mb-4
             "
           >
-            Menu Kopi{' '}
+            Temukan Rasa{' '}
             <span className="text-[#b8860b]">
-              ARUME
+              Arumeya
             </span>
           </h2>
 
@@ -262,13 +306,16 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
               lg:text-lg
               font-medium
               leading-relaxed
+              max-w-3xl
+              mx-auto
             "
           >
-            Temukan racikan Arumeya favoritmu dengan perpaduan
-            rasa, aroma, dan kehangatan khas ARUME Coffee.
+            Pilih varian favoritmu dan rasakan perpaduan aroma,
+            rasa, serta kehangatan khas ARUME Coffee dalam setiap
+            botol Arumeya.
           </p>
 
-          {/* CATEGORY FILTER */}
+          {/* MENU SELECTION */}
           <div
             className="
               flex
@@ -279,41 +326,43 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
               mt-8
             "
           >
-            {categories.map((cat) => (
+            {menuFilters.map((menu) => (
               <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
+                key={menu.id}
+                onClick={() => setActiveMenu(menu.id)}
                 className={`
-                  px-5
+                  px-4
+                  sm:px-5
                   py-2.5
                   rounded-full
-                  text-xs
+                  text-[11px]
                   sm:text-sm
-                  font-bold
+                  font-extrabold
                   border
                   transition-all
                   duration-300
                   ${
-                    activeCategory === cat
+                    activeMenu === menu.id
                       ? `
                         bg-[#b8860b]
                         text-white
                         border-[#b8860b]
-                        shadow-[0_8px_20px_rgba(184,134,11,0.18)]
+                        shadow-[0_8px_20px_rgba(184,134,11,0.20)]
                         scale-[1.03]
                       `
                       : `
-                        bg-white/60
-                        text-[#6d5844]
+                        bg-white/70
+                        text-[#5f4b38]
                         border-[#d9c4a3]
                         hover:bg-[#fff8ef]
                         hover:text-[#b8860b]
                         hover:border-[#d4af37]
+                        hover:-translate-y-0.5
                       `
                   }
                 `}
               >
-                {cat === 'All' ? 'Semua Menu' : cat}
+                {menu.label}
               </button>
             ))}
           </div>
@@ -381,7 +430,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
               )}
 
               <div>
-                {/* IMAGE */}
+                {/* PRODUCT IMAGE */}
                 <div
                   className="
                     relative
@@ -398,6 +447,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                       w-full
                       h-full
                       object-cover
+                      object-center
                       transition-transform
                       duration-700
                       ease-out
@@ -412,7 +462,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                       absolute
                       inset-0
                       bg-gradient-to-t
-                      from-black/40
+                      from-black/35
                       via-transparent
                       to-transparent
                     "
@@ -446,40 +496,20 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                       "
                     />
 
-                    <span
-                      className="
-                        text-xs
-                        font-black
-                        text-[#2d1b12]
-                      "
-                    >
+                    <span className="text-xs font-black text-[#2d1b12]">
                       {item.rating}
                     </span>
 
-                    <span
-                      className="
-                        text-[10px]
-                        text-[#806c58]
-                        font-medium
-                      "
-                    >
+                    <span className="text-[10px] text-[#806c58] font-medium">
                       ({item.reviewsCount})
                     </span>
                   </div>
                 </div>
 
-                {/* BODY */}
+                {/* CARD BODY */}
                 <div className="p-6">
 
-                  {/* TITLE */}
-                  <div
-                    className="
-                      flex
-                      items-start
-                      gap-3
-                      mb-3
-                    "
-                  >
+                  <div className="flex items-start gap-3 mb-3">
                     <div
                       className="
                         w-10
@@ -500,21 +530,37 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                       <Coffee className="w-5 h-5 text-[#b8860b]" />
                     </div>
 
-                    <h3
-                      className="
-                        text-xl
-                        sm:text-2xl
-                        font-black
-                        tracking-tight
-                        leading-tight
-                        text-[#2d1b12]
-                        transition-colors
-                        duration-300
-                        group-hover:text-[#b8860b]
-                      "
-                    >
-                      {item.name}
-                    </h3>
+                    <div>
+                      <span
+                        className="
+                          block
+                          text-[10px]
+                          uppercase
+                          tracking-[0.16em]
+                          font-extrabold
+                          text-[#b8860b]
+                          mb-1
+                        "
+                      >
+                        Arumeya Collection
+                      </span>
+
+                      <h3
+                        className="
+                          text-xl
+                          sm:text-2xl
+                          font-black
+                          tracking-tight
+                          leading-tight
+                          text-[#2d1b12]
+                          transition-colors
+                          duration-300
+                          group-hover:text-[#b8860b]
+                        "
+                      >
+                        {item.name}
+                      </h3>
+                    </div>
                   </div>
 
                   {/* DESCRIPTION */}
@@ -533,14 +579,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
 
                   {/* TAGS */}
                   {item.tags && (
-                    <div
-                      className="
-                        flex
-                        flex-wrap
-                        gap-1.5
-                        mb-2
-                      "
-                    >
+                    <div className="flex flex-wrap gap-1.5 mb-2">
                       {item.tags.map((tag) => (
                         <span
                           key={tag}
@@ -564,7 +603,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                 </div>
               </div>
 
-              {/* FOOTER */}
+              {/* CARD FOOTER */}
               <div
                 className="
                   px-6
