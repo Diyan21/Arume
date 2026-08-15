@@ -22,7 +22,7 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
       'Espresso dengan sentuhan butterscotch lembut dan aroma karamel yang hangat, creamy, dan elegan.',
     price: 18000,
     formattedPrice: 'Rp18.000',
-    image: '/images/menu/arumeya-butterscotch.jpg',
+    image: '/images/menu/arumeya-butterscotch-latte.jpg',
     category: 'Signature',
     rating: 4.9,
     reviewsCount: 289,
