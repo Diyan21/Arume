@@ -7,48 +7,54 @@ export const HeroSection: React.FC = () => {
       className="
         relative
         w-full
-        h-[75svh]
+        aspect-video
+        md:aspect-auto
         md:h-screen
         overflow-hidden
         bg-[#0a0806]
       "
     >
       {/* VIDEO HERO */}
-      <div className="absolute inset-0 z-0 flex items-center justify-center">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="auto"
-          className="
-            w-full
-            h-full
-            object-contain
-            object-center
-            md:object-cover
-          "
-        >
-          <source
-            src="/videos/arume-hero.mp4"
-            type="video/mp4"
-          />
-        </video>
-      </div>
+      <video
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        className="
+          absolute
+          inset-0
+          w-full
+          h-full
+          object-cover
+          object-center
+        "
+      >
+        <source
+          src="/videos/arume-hero.mp4"
+          type="video/mp4"
+        />
+      </video>
 
-      {/* OVERLAY TIPIS */}
-      <div className="absolute inset-0 z-[1] bg-black/10 pointer-events-none" />
-
-      {/* GRADIENT BAWAH */}
+      {/* Overlay tipis */}
       <div
         className="
           absolute
           inset-0
-          z-[1]
+          bg-black/10
+          pointer-events-none
+        "
+      />
+
+      {/* Gradient tipis bawah */}
+      <div
+        className="
+          absolute
+          inset-0
           bg-gradient-to-b
           from-transparent
           via-transparent
-          to-black/20
+          to-black/15
           pointer-events-none
         "
       />
