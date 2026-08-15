@@ -40,18 +40,53 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
 
   return (
     <section
-      id="menu"
-      className="
-        py-20
-        sm:py-24
-        relative
-        overflow-hidden
-        bg-gradient-to-b
-        from-[#f2e8da]
-        via-[#fbf7f1]
-        to-[#fbf7f1]
-      "
-    >
+  id="menu"
+  className="
+    py-20
+    sm:py-24
+    relative
+    overflow-hidden
+    bg-[#f6efe5]
+  "
+  style={{
+    backgroundImage: `
+      radial-gradient(circle at 15% 20%, rgba(92,64,42,0.09) 0px, rgba(92,64,42,0.09) 1px, transparent 1.8px),
+      radial-gradient(circle at 75% 25%, rgba(184,134,11,0.08) 0px, rgba(184,134,11,0.08) 1.2px, transparent 2px),
+      radial-gradient(circle at 35% 70%, rgba(120,90,60,0.07) 0px, rgba(120,90,60,0.07) 1px, transparent 1.8px),
+      radial-gradient(circle at 85% 80%, rgba(80,55,38,0.06) 0px, rgba(80,55,38,0.06) 1.5px, transparent 2.2px),
+
+      radial-gradient(ellipse at 25% 40%, rgba(120,90,65,0.035) 0%, transparent 35%),
+      radial-gradient(ellipse at 80% 65%, rgba(184,134,11,0.03) 0%, transparent 35%),
+
+      linear-gradient(
+        115deg,
+        transparent 0%,
+        rgba(126,96,68,0.035) 28%,
+        transparent 31%,
+        transparent 57%,
+        rgba(184,134,11,0.03) 60%,
+        transparent 64%
+      ),
+
+      linear-gradient(
+        to bottom,
+        #f2e8da 0%,
+        #fbf7f1 45%,
+        #f6efe5 100%
+      )
+    `,
+    backgroundSize: `
+      28px 28px,
+      38px 38px,
+      48px 48px,
+      62px 62px,
+      100% 100%,
+      100% 100%,
+      100% 100%,
+      100% 100%
+    `,
+  }}
+>
       {/* GOLD AMBIENT */}
       <div
         className="
