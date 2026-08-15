@@ -4,13 +4,15 @@ import {
   QrCode,
   Landmark,
   Banknote,
-  WalletCards,
-  Smartphone,
   ShieldCheck,
   ScanLine,
+  Smartphone,
+  WalletCards,
+  BadgeHelp,
+  MessageCircle,
 } from 'lucide-react';
 
-import { PAYMENT_METHODS } from '../data/coffeeData';
+import { PAYMENT_METHODS, CONTACT_INFO } from '../data/coffeeData';
 
 export const PaymentSection: React.FC = () => {
   const getPaymentIcon = (name: string) => {
@@ -41,18 +43,20 @@ export const PaymentSection: React.FC = () => {
     }
   };
 
-  const beanDecorTop = [
-    { top: '10%', left: '4%', rotate: '-25deg', scale: '1' },
-    { top: '18%', left: '12%', rotate: '18deg', scale: '0.8' },
-    { top: '28%', left: '6%', rotate: '35deg', scale: '0.9' },
-    { top: '38%', left: '14%', rotate: '-12deg', scale: '0.7' },
-  ];
+  const beanDecor = [
+    { top: '10%', left: '3%', rotate: '-24deg', scale: '1' },
+    { top: '17%', left: '9%', rotate: '18deg', scale: '0.85' },
+    { top: '28%', left: '5%', rotate: '30deg', scale: '0.9' },
+    { top: '43%', left: '10%', rotate: '-10deg', scale: '0.78' },
+    { top: '62%', left: '4%', rotate: '22deg', scale: '0.88' },
+    { top: '78%', left: '11%', rotate: '-30deg', scale: '0.75' },
 
-  const beanDecorBottom = [
-    { bottom: '12%', right: '5%', rotate: '20deg', scale: '1' },
-    { bottom: '22%', right: '13%', rotate: '-18deg', scale: '0.8' },
-    { bottom: '30%', right: '7%', rotate: '28deg', scale: '0.9' },
-    { bottom: '40%', right: '15%', rotate: '-30deg', scale: '0.7' },
+    { top: '12%', right: '4%', rotate: '20deg', scale: '1' },
+    { top: '22%', right: '10%', rotate: '-15deg', scale: '0.82' },
+    { top: '34%', right: '5%', rotate: '28deg', scale: '0.92' },
+    { top: '48%', right: '12%', rotate: '-22deg', scale: '0.78' },
+    { top: '67%', right: '6%', rotate: '16deg', scale: '0.86' },
+    { top: '80%', right: '10%', rotate: '-26deg', scale: '0.74' },
   ];
 
   return (
@@ -65,39 +69,21 @@ export const PaymentSection: React.FC = () => {
       <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#c08a3e]/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-20 right-0 w-72 h-72 bg-[#8b5a2b]/8 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Coffee Bean Decoration - Top Left */}
+      {/* Coffee Bean Decorations */}
       <div className="absolute inset-0 pointer-events-none hidden md:block">
-        {beanDecorTop.map((bean, index) => (
+        {beanDecor.map((bean, index) => (
           <div
-            key={`top-bean-${index}`}
+            key={`bean-${index}`}
             className="absolute"
             style={{
               top: bean.top,
-              left: bean.left,
+              left: 'left' in bean ? bean.left : undefined,
+              right: 'right' in bean ? bean.right : undefined,
               transform: `rotate(${bean.rotate}) scale(${bean.scale})`,
             }}
           >
-            <div className="relative w-10 h-16 rounded-full bg-[#8b5a2b]/10 border border-[#8b5a2b]/10 shadow-sm">
-              <div className="absolute left-1/2 top-1 -translate-x-1/2 w-[1px] h-[85%] bg-[#8b5a2b]/20 rounded-full" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Coffee Bean Decoration - Bottom Right */}
-      <div className="absolute inset-0 pointer-events-none hidden md:block">
-        {beanDecorBottom.map((bean, index) => (
-          <div
-            key={`bottom-bean-${index}`}
-            className="absolute"
-            style={{
-              bottom: bean.bottom,
-              right: bean.right,
-              transform: `rotate(${bean.rotate}) scale(${bean.scale})`,
-            }}
-          >
-            <div className="relative w-10 h-16 rounded-full bg-[#8b5a2b]/10 border border-[#8b5a2b]/10 shadow-sm">
-              <div className="absolute left-1/2 top-1 -translate-x-1/2 w-[1px] h-[85%] bg-[#8b5a2b]/20 rounded-full" />
+            <div className="relative w-10 h-16 rounded-full bg-[#8b5a2b]/8 border border-[#8b5a2b]/8 shadow-sm">
+              <div className="absolute left-1/2 top-1 -translate-x-1/2 w-[1px] h-[85%] bg-[#8b5a2b]/16 rounded-full" />
             </div>
           </div>
         ))}
@@ -215,6 +201,72 @@ export const PaymentSection: React.FC = () => {
                 </span>
               </div>
             ))}
+
+            {/* Extra Fill Card */}
+            <a
+              href={CONTACT_INFO.whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                relative
+                group
+                min-h-[175px]
+                sm:min-h-[190px]
+                rounded-2xl
+                border
+                border-[#d4af37]/35
+                bg-gradient-to-br
+                from-[#fff8ef]
+                to-[#f7ebda]
+                px-4
+                py-6
+                flex
+                flex-col
+                items-center
+                justify-center
+                text-center
+                transition-all
+                duration-300
+                hover:-translate-y-1
+                hover:border-[#b8860b]/70
+                hover:shadow-[0_15px_35px_rgba(180,134,11,0.14)]
+              "
+            >
+              <span className="absolute top-3 right-3 text-[10px] font-bold tracking-wider text-[#b8860b]/35">
+                08
+              </span>
+
+              <div
+                className="
+                  w-14
+                  h-14
+                  sm:w-16
+                  sm:h-16
+                  rounded-2xl
+                  bg-[#fff3df]
+                  border
+                  border-[#d4af37]/30
+                  flex
+                  items-center
+                  justify-center
+                  mb-4
+                  transition-all
+                  duration-300
+                  group-hover:bg-[#ffeaca]
+                  group-hover:border-[#d4af37]/70
+                "
+              >
+                <MessageCircle className="w-7 h-7 text-[#b8860b]" />
+              </div>
+
+              <h3 className="text-sm sm:text-base font-extrabold tracking-tight text-[#2d1b12] group-hover:text-[#b8860b] transition-colors">
+                Bantuan Pembayaran
+              </h3>
+
+              <span className="mt-2 text-[11px] sm:text-xs font-medium text-[#7b6753] leading-relaxed">
+                Konfirmasi cepat via WhatsApp jika butuh bantuan transaksi
+              </span>
+            </a>
           </div>
 
           {/* Security Info */}
