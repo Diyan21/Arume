@@ -2,7 +2,7 @@ import { CoffeeMenuItem, PaymentMethodItem } from '../types';
 
 export const COFFEE_MENU: CoffeeMenuItem[] = [
   {
-    id: 'arumeya-aren-latte',
+    id: 'prod-01',
     name: 'Arumeya Aren Latte',
     description:
       'Espresso pilihan berpadu dengan susu creamy dan manis lembut gula aren, menghadirkan aroma hangat khas Arumeya.',
@@ -16,7 +16,7 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
     tags: ['Signature', 'Gula Aren', 'Creamy']
   },
   {
-    id: 'arumeya-butterscotch',
+    id: 'prod-02',
     name: 'Arumeya Butterscotch',
     description:
       'Espresso dengan sentuhan butterscotch lembut dan aroma karamel yang hangat, creamy, dan elegan.',
@@ -30,7 +30,7 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
     tags: ['Favorite', 'Butterscotch', 'Creamy']
   },
   {
-    id: 'arumeya-hazelnut-latte',
+    id: 'prod-03',
     name: 'Arumeya Hazelnut Latte',
     description:
       'Latte lembut dengan karakter espresso dan aroma hazelnut yang nutty, harum, dan terasa hangat di setiap tegukan.',
@@ -43,7 +43,7 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
     tags: ['Hazelnut', 'Nutty', 'Smooth']
   },
   {
-    id: 'arumeya-banana-latte',
+    id: 'prod-04',
     name: 'Arumeya Banana Latte',
     description:
       'Perpaduan espresso, susu creamy, dan sentuhan banana yang lembut untuk rasa unik, ringan, dan menyenangkan.',
@@ -56,7 +56,7 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
     tags: ['Banana', 'Creamy', 'Unique']
   },
   {
-    id: 'arumeya-americano',
+    id: 'prod-05',
     name: 'Arumeya Americano',
     description:
       'Espresso murni dengan karakter kopi yang bersih, aromatik, dan bold untuk menikmati rasa asli kopi ARUME.',
@@ -155,7 +155,7 @@ export const CONTACT_INFO = {
   phoneDisplay: '0878-8122-7088',
   phoneRaw: '6287881227088',
   whatsappUrl: 'https://wa.me/6287881227088',
-  address: 'Jl. Cluster Britania E8/10',
+  address: 'Jl. Cluster Britania E8/10 & Crown Golf No.58',
   openingHours: 'Buka Setiap Saat: 18:00 - 22:00 WIB',
   instagram: '@diyanaxl'
 };
