@@ -67,6 +67,51 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
     rating: 4.9,
     reviewsCount: 415,
     tags: ['Classic', 'Bold', 'No Milk']
+  },
+
+  // =========================
+  // KOPI TORAJA
+  // =========================
+
+  {
+    id: 'prod-06',
+    name: 'Arume Toraja Blend 250g',
+    description:
+      'Kopi Toraja racikan ARUME dengan perpaduan Arabica dan Robusta pilihan. Menghadirkan aroma kopi yang kuat, rasa bold namun tetap smooth dan seimbang. Cocok dinikmati sebagai kopi harian dengan karakter khas Nusantara.',
+    price: 55000,
+    formattedPrice: 'Rp55.000',
+    image: '/images/menu/arume-toraja-250g.jpg',
+    category: 'Coffee Beans',
+    rating: 4.9,
+    reviewsCount: 0,
+    isBestSeller: true,
+    tags: ['Toraja', 'Arabica & Robusta', '250g']
+  },
+  {
+    id: 'prod-07',
+    name: 'Arume Toraja Blend 500g',
+    description:
+      'Kopi Toraja racikan ARUME dengan perpaduan Arabica dan Robusta pilihan. Menghadirkan aroma kopi yang kuat, rasa bold namun tetap smooth dan seimbang. Pilihan lebih hemat untuk pecinta kopi yang menikmati kopi setiap hari.',
+    price: 105000,
+    formattedPrice: 'Rp105.000',
+    image: '/images/menu/arume-toraja-500g.jpg',
+    category: 'Coffee Beans',
+    rating: 4.9,
+    reviewsCount: 0,
+    tags: ['Toraja', 'Arabica & Robusta', '500g']
+  },
+  {
+    id: 'prod-08',
+    name: 'Arume Toraja Blend 1kg',
+    description:
+      'Kopi Toraja racikan ARUME dengan perpaduan Arabica dan Robusta pilihan dalam kemasan 1 kg. Aroma kuat, body mantap, serta rasa yang smooth dan seimbang. Cocok untuk kebutuhan rumah, kantor, maupun usaha.',
+    price: 200000,
+    formattedPrice: 'Rp200.000',
+    image: '/images/menu/arume-toraja-1kg.jpg',
+    category: 'Coffee Beans',
+    rating: 4.9,
+    reviewsCount: 0,
+    tags: ['Toraja', 'Arabica & Robusta', '1kg', 'Best Value']
   }
 ];
 
@@ -74,25 +119,29 @@ export const WHY_US_ITEMS = [
   {
     id: 'beans',
     title: 'Biji Kopi Berkualitas',
-    description: 'Dipetik langsung dari perkebunan kopi terbaik dengan seleksi 100% biji kopi pilihan berkualitas tinggi.',
+    description:
+      'Menggunakan biji kopi pilihan dengan karakter rasa dan aroma yang terjaga untuk menghasilkan pengalaman minum kopi yang nikmat.',
     icon: 'Bean'
   },
   {
     id: 'fresh',
     title: 'Fresh Brew Setiap Hari',
-    description: 'Biji kopi digiling & diseduh segar secara langsung saat pesanan Anda dibuat oleh barista berpengalaman.',
+    description:
+      'Biji kopi digiling dan diseduh segar saat pesanan dibuat untuk menjaga aroma serta cita rasa kopi.',
     icon: 'Coffee'
   },
   {
     id: 'price',
     title: 'Harga Terjangkau',
-    description: 'Nikmati cita rasa espresso premium kelas kafe mewah dengan harga yang sangat ramah di kantong.',
+    description:
+      'Nikmati kopi berkualitas dengan cita rasa premium dan harga yang tetap ramah di kantong.',
     icon: 'Sparkles'
   },
   {
     id: 'flavor',
     title: 'Rasa Premium',
-    description: 'Racikan resep istimewa house-blend ARUME yang menghasilkan konsistensi rasa konsisten & nikmat.',
+    description:
+      'Racikan khas ARUME menghadirkan perpaduan rasa yang seimbang, aromatik, dan nikmat untuk dinikmati setiap hari.',
     icon: 'Award'
   }
 ];
@@ -102,49 +151,56 @@ export const PAYMENT_METHODS: PaymentMethodItem[] = [
     id: 'qris',
     name: 'QRIS',
     type: 'Instant QR Scan',
-    description: 'Scan & bayar instan dari semua aplikasi M-Banking & E-Wallet.',
+    description:
+      'Scan & bayar instan dari semua aplikasi M-Banking & E-Wallet.',
     iconType: 'qris'
   },
   {
     id: 'bank',
     name: 'Transfer Bank',
     type: 'Virtual Account / Direct',
-    description: 'Menerima transfer BCA, Mandiri, BRI, BNI & Bank Digital.',
+    description:
+      'Menerima transfer BCA, Mandiri, BRI, BNI & Bank Digital.',
     iconType: 'bank'
   },
   {
     id: 'dana',
     name: 'DANA',
     type: 'E-Wallet',
-    description: 'Pembayaran praktis & aman via saldo DANA.',
+    description:
+      'Pembayaran praktis & aman via saldo DANA.',
     iconType: 'e-wallet'
   },
   {
     id: 'gopay',
     name: 'GoPay',
     type: 'E-Wallet',
-    description: 'Bayar mudah langsung dari aplikasi Gojek / GoPay.',
+    description:
+      'Bayar mudah langsung dari aplikasi Gojek / GoPay.',
     iconType: 'e-wallet'
   },
   {
     id: 'ovo',
     name: 'OVO',
     type: 'E-Wallet',
-    description: 'Transaksi cepat menggunakan akun OVO Anda.',
+    description:
+      'Transaksi cepat menggunakan akun OVO Anda.',
     iconType: 'e-wallet'
   },
   {
     id: 'shopeepay',
     name: 'ShopeePay',
     type: 'E-Wallet',
-    description: 'Nikmati kemudahan bayar dengan ShopeePay.',
+    description:
+      'Nikmati kemudahan bayar dengan ShopeePay.',
     iconType: 'e-wallet'
   },
   {
     id: 'cash',
     name: 'Tunai (Cash)',
     type: 'Pembayaran Langsung',
-    description: 'Bayar tunai saat pengambilan di outlet atau layanan COD local.',
+    description:
+      'Bayar tunai saat pengambilan di outlet atau layanan COD local.',
     iconType: 'cash'
   }
 ];
