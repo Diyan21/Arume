@@ -120,6 +120,12 @@ type AdminTab =
   | 'shipping';
 
 
+type OrderFilter =
+  | 'active'
+  | 'pending'
+  | 'history';
+
+
 /* =========================================================
    API
    ========================================================= */
@@ -148,6 +154,19 @@ export function AdminStock({
   ] =
     useState<AdminTab>(
       'orders'
+    );
+
+
+  /* =========================================================
+     ORDER FILTER
+     ========================================================= */
+
+  const [
+    orderFilter,
+    setOrderFilter
+  ] =
+    useState<OrderFilter>(
+      'active'
     );
 
 
@@ -424,7 +443,6 @@ export function AdminStock({
 
 
         setProducts(
-
           Array.isArray(
             productData
           )
@@ -447,7 +465,6 @@ export function AdminStock({
                 })
               )
             : []
-
         );
 
 
@@ -538,7 +555,6 @@ export function AdminStock({
 
 
         setShippingRates(
-
           Array.isArray(
             shippingData
           )
@@ -571,7 +587,6 @@ export function AdminStock({
                 })
               )
             : []
-
         );
 
 
@@ -710,22 +725,17 @@ export function AdminStock({
                     ),
 
                   delivery_distance_km:
-
                     order.delivery_distance_km ===
                     null
-
                       ? null
-
                       : Number(
                           order.delivery_distance_km
                         ),
 
                   items:
-
                     Array.isArray(
                       order.items
                     )
-
                       ? order.items.map(
                           item => ({
                             ...item,
@@ -749,11 +759,9 @@ export function AdminStock({
                               )
                           })
                         )
-
                       : []
                 })
               )
-
             : [];
 
 
@@ -885,7 +893,6 @@ export function AdminStock({
 
       setProducts(
         current =>
-
           current.map(
             product => {
 
@@ -904,6 +911,7 @@ export function AdminStock({
                 stock:
                   Math.max(
                     0,
+
                     Number(
                       product.stock
                     ) +
@@ -933,32 +941,25 @@ export function AdminStock({
 
       setProducts(
         current =>
-
           current.map(
             product =>
-
               product.id ===
               id
-
                 ? {
                     ...product,
 
                     stock:
-
                       Number.isFinite(
                         number
                       )
-
                         ? Math.max(
                             0,
                             Math.floor(
                               number
                             )
                           )
-
                         : 0
                   }
-
                 : product
           )
       );
@@ -1103,7 +1104,6 @@ export function AdminStock({
 
       setShippingRates(
         current =>
-
           current.map(
             rate => {
 
@@ -1120,16 +1120,13 @@ export function AdminStock({
                 ...rate,
 
                 [field]:
-
                   Number.isFinite(
                     numericValue
                   )
-
                     ? Math.max(
                         0,
                         numericValue
                       )
-
                     : 0
               };
             }
@@ -1146,20 +1143,16 @@ export function AdminStock({
 
       setShippingRates(
         current =>
-
           current.map(
             rate =>
-
               rate.id ===
               id
-
                 ? {
                     ...rate,
 
                     active:
                       !rate.active
                   }
-
                 : rate
           )
       );
@@ -1318,9 +1311,7 @@ export function AdminStock({
 
         setError(
           err instanceof Error
-
             ? err.message
-
             : 'Gagal menyimpan tarif ongkir.'
         );
 
@@ -1418,24 +1409,30 @@ export function AdminStock({
         }
 
 
-        const statusMessage =
-
+        if (
           status ===
           'ready'
+        ) {
 
-            ? 'Pesanan berhasil ditandai sudah siap.'
+          setMessage(
+            `${order.order_number}: Pesanan ditandai sudah siap.`
+          );
 
-            : status ===
-              'completed'
+        } else if (
+          status ===
+          'completed'
+        ) {
 
-              ? 'Pesanan berhasil diselesaikan.'
+          setMessage(
+            `${order.order_number}: Pesanan selesai dan masuk ke riwayat.`
+          );
 
-              : 'Status pesanan berhasil diperbarui.';
+        } else {
 
-
-        setMessage(
-          `${order.order_number}: ${statusMessage}`
-        );
+          setMessage(
+            `${order.order_number}: Status berhasil diperbarui.`
+          );
+        }
 
 
         await loadOrders(
@@ -1454,13 +1451,9 @@ export function AdminStock({
 
 
         setError(
-
           err instanceof Error
-
             ? err.message
-
             : 'Gagal mengubah status pesanan.'
-
         );
 
 
@@ -1597,7 +1590,7 @@ export function AdminStock({
 
 
   /* =========================================================
-     ORDER COUNTERS
+     ORDER FILTERS
      ========================================================= */
 
   const activeOrders =
@@ -1610,8 +1603,28 @@ export function AdminStock({
     );
 
 
-  const preparingOrders =
+  const pendingOrders =
     orders.filter(
+      order =>
+        order.status ===
+        'pending'
+    );
+
+
+  const historyOrders =
+    orders.filter(
+      order =>
+        order.status ===
+          'completed' ||
+        order.status ===
+          'failed' ||
+        order.status ===
+          'refunded'
+    );
+
+
+  const preparingOrders =
+    activeOrders.filter(
       order =>
         order.status ===
         'paid'
@@ -1619,11 +1632,21 @@ export function AdminStock({
 
 
   const readyOrders =
-    orders.filter(
+    activeOrders.filter(
       order =>
         order.status ===
         'ready'
     ).length;
+
+
+  const visibleOrders =
+    orderFilter ===
+    'active'
+      ? activeOrders
+      : orderFilter ===
+        'pending'
+        ? pendingOrders
+        : historyOrders;
 
 
   /* =========================================================
@@ -1793,7 +1816,7 @@ export function AdminStock({
 
 
         {/* ===================================================
-            TABS
+            MAIN TABS
             =================================================== */}
 
         <div
@@ -1837,9 +1860,7 @@ export function AdminStock({
                 ${
                   activeTab ===
                   'orders'
-
                     ? 'bg-[#d4af37] border-[#d4af37] text-black'
-
                     : 'bg-[#17110d] border-[#382e25] text-[#bcae9f]'
                 }
               `}
@@ -1873,9 +1894,7 @@ export function AdminStock({
                     ${
                       activeTab ===
                       'orders'
-
                         ? 'bg-black text-[#d4af37]'
-
                         : 'bg-[#d4af37] text-black'
                     }
                   `}
@@ -1910,9 +1929,7 @@ export function AdminStock({
                 ${
                   activeTab ===
                   'stock'
-
                     ? 'bg-[#d4af37] border-[#d4af37] text-black'
-
                     : 'bg-[#17110d] border-[#382e25] text-[#bcae9f]'
                 }
               `}
@@ -1952,9 +1969,7 @@ export function AdminStock({
                 ${
                   activeTab ===
                   'shipping'
-
                     ? 'bg-[#d4af37] border-[#d4af37] text-black'
-
                     : 'bg-[#17110d] border-[#382e25] text-[#bcae9f]'
                 }
               `}
@@ -1993,7 +2008,9 @@ export function AdminStock({
       >
 
 
-        {/* MESSAGE */}
+        {/* ===================================================
+            MESSAGE
+            =================================================== */}
 
         {message && (
 
@@ -2009,9 +2026,7 @@ export function AdminStock({
               py-3
             "
           >
-
             {message}
-
           </div>
 
         )}
@@ -2031,9 +2046,7 @@ export function AdminStock({
               py-3
             "
           >
-
             {error}
-
           </div>
 
         )}
@@ -2077,14 +2090,16 @@ export function AdminStock({
             </div>
 
 
-            {/* SUMMARY */}
+            {/* =================================================
+                SUMMARY
+                ================================================= */}
 
             <div
               className="
                 grid
                 grid-cols-2
                 gap-3
-                mb-7
+                mb-5
               "
             >
 
@@ -2196,6 +2211,111 @@ export function AdminStock({
             </div>
 
 
+            {/* =================================================
+                ORDER FILTER
+                ================================================= */}
+
+            <div
+              className="
+                grid
+                grid-cols-3
+                gap-2
+                mb-7
+              "
+            >
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  setOrderFilter(
+                    'active'
+                  )
+                }
+                className={`
+                  rounded-xl
+                  border
+                  px-2
+                  py-3
+                  text-xs
+                  sm:text-sm
+                  font-bold
+                  transition
+                  ${
+                    orderFilter ===
+                    'active'
+                      ? 'bg-[#d4af37] border-[#d4af37] text-black'
+                      : 'bg-[#13100d] border-[#302820] text-[#ad9f91]'
+                  }
+                `}
+              >
+                Aktif ({activeOrders.length})
+              </button>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  setOrderFilter(
+                    'pending'
+                  )
+                }
+                className={`
+                  rounded-xl
+                  border
+                  px-2
+                  py-3
+                  text-xs
+                  sm:text-sm
+                  font-bold
+                  transition
+                  ${
+                    orderFilter ===
+                    'pending'
+                      ? 'bg-[#d4af37] border-[#d4af37] text-black'
+                      : 'bg-[#13100d] border-[#302820] text-[#ad9f91]'
+                  }
+                `}
+              >
+                Belum Bayar ({pendingOrders.length})
+              </button>
+
+
+              <button
+                type="button"
+                onClick={() =>
+                  setOrderFilter(
+                    'history'
+                  )
+                }
+                className={`
+                  rounded-xl
+                  border
+                  px-2
+                  py-3
+                  text-xs
+                  sm:text-sm
+                  font-bold
+                  transition
+                  ${
+                    orderFilter ===
+                    'history'
+                      ? 'bg-[#d4af37] border-[#d4af37] text-black'
+                      : 'bg-[#13100d] border-[#302820] text-[#ad9f91]'
+                  }
+                `}
+              >
+                Riwayat ({historyOrders.length})
+              </button>
+
+
+            </div>
+
+
+            {/* =================================================
+                ORDER LIST
+                ================================================= */}
+
             {ordersLoading ? (
 
               <div
@@ -2208,7 +2328,7 @@ export function AdminStock({
                 Memuat pesanan...
               </div>
 
-            ) : orders.length ===
+            ) : visibleOrders.length ===
               0 ? (
 
               <div
@@ -2239,7 +2359,15 @@ export function AdminStock({
                     text-lg
                   "
                 >
-                  Belum ada pesanan
+
+                  {orderFilter ===
+                  'active'
+                    ? 'Tidak ada pesanan aktif'
+                    : orderFilter ===
+                      'pending'
+                      ? 'Tidak ada pesanan menunggu pembayaran'
+                      : 'Belum ada riwayat pesanan'}
+
                 </p>
 
 
@@ -2250,7 +2378,15 @@ export function AdminStock({
                     mt-1
                   "
                 >
-                  Pesanan customer akan muncul di sini.
+
+                  {orderFilter ===
+                  'active'
+                    ? 'Pesanan yang sudah dibayar akan muncul di sini.'
+                    : orderFilter ===
+                      'pending'
+                      ? 'Order yang belum dibayar akan muncul di sini.'
+                      : 'Pesanan yang sudah selesai akan tersimpan di sini.'}
+
                 </p>
 
               </div>
@@ -2264,7 +2400,7 @@ export function AdminStock({
               >
 
 
-                {orders.map(
+                {visibleOrders.map(
                   order => {
 
                     const statusUI =
@@ -2303,7 +2439,9 @@ export function AdminStock({
                       >
 
 
-                        {/* ORDER HEADER */}
+                        {/* =====================================
+                            ORDER HEADER
+                            ===================================== */}
 
                         <div
                           className="
@@ -2388,6 +2526,7 @@ export function AdminStock({
                                 "
                               />
 
+
                               <span
                                 className="
                                   hidden
@@ -2405,7 +2544,9 @@ export function AdminStock({
                         </div>
 
 
-                        {/* ORDER BODY */}
+                        {/* =====================================
+                            ORDER BODY
+                            ===================================== */}
 
                         <div
                           className="
@@ -2553,7 +2694,8 @@ export function AdminStock({
                                           {Number(
                                             item.quantity ||
                                             0
-                                          )} x{' '}
+                                          )}{' '}
+                                          x{' '}
                                           {formatPrice(
                                             Number(
                                               item.price ||
@@ -2691,6 +2833,7 @@ export function AdminStock({
                                         mt-0.5
                                       "
                                     />
+
 
                                     <span>
                                       {order.delivery_address}
@@ -2883,7 +3026,9 @@ export function AdminStock({
                           </div>
 
 
-                          {/* ACTION */}
+                          {/* =====================================
+                              ACTION PAID
+                              ===================================== */}
 
                           {order.status ===
                             'paid' && (
@@ -2947,6 +3092,10 @@ export function AdminStock({
                           )}
 
 
+                          {/* =====================================
+                              ACTION READY
+                              ===================================== */}
+
                           {order.status ===
                             'ready' && (
 
@@ -3009,6 +3158,10 @@ export function AdminStock({
                           )}
 
 
+                          {/* =====================================
+                              COMPLETED
+                              ===================================== */}
+
                           {order.status ===
                             'completed' && (
 
@@ -3036,6 +3189,117 @@ export function AdminStock({
                               />
 
                               Pesanan Selesai
+
+                            </div>
+
+                          )}
+
+
+                          {/* =====================================
+                              PENDING
+                              ===================================== */}
+
+                          {order.status ===
+                            'pending' && (
+
+                            <div
+                              className="
+                                rounded-xl
+                                bg-[#17120e]
+                                border
+                                border-[#3e342b]
+                                text-[#b8ab9e]
+                                py-3
+                                flex
+                                items-center
+                                justify-center
+                                gap-2
+                                font-semibold
+                              "
+                            >
+
+                              <Clock3
+                                className="
+                                  w-5
+                                  h-5
+                                "
+                              />
+
+                              Menunggu Pembayaran
+
+                            </div>
+
+                          )}
+
+
+                          {/* =====================================
+                              FAILED
+                              ===================================== */}
+
+                          {order.status ===
+                            'failed' && (
+
+                            <div
+                              className="
+                                rounded-xl
+                                bg-red-950/30
+                                border
+                                border-red-500/30
+                                text-red-300
+                                py-3
+                                flex
+                                items-center
+                                justify-center
+                                gap-2
+                                font-semibold
+                              "
+                            >
+
+                              <XCircle
+                                className="
+                                  w-5
+                                  h-5
+                                "
+                              />
+
+                              Pembayaran Gagal
+
+                            </div>
+
+                          )}
+
+
+                          {/* =====================================
+                              REFUNDED
+                              ===================================== */}
+
+                          {order.status ===
+                            'refunded' && (
+
+                            <div
+                              className="
+                                rounded-xl
+                                bg-purple-950/30
+                                border
+                                border-purple-500/30
+                                text-purple-300
+                                py-3
+                                flex
+                                items-center
+                                justify-center
+                                gap-2
+                                font-semibold
+                              "
+                            >
+
+                              <RefreshCcw
+                                className="
+                                  w-5
+                                  h-5
+                                "
+                              />
+
+                              Pembayaran Dikembalikan
 
                             </div>
 
@@ -3183,13 +3447,11 @@ export function AdminStock({
                               mt-1
                             "
                           >
-
                             {formatPrice(
                               Number(
                                 product.price
                               )
                             )}
-
                           </p>
 
                         </div>
@@ -3579,9 +3841,7 @@ export function AdminStock({
                             transition
                             ${
                               rate.active
-
                                 ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-
                                 : 'bg-red-950/30 border-red-500/30 text-red-300'
                             }
                           `}
@@ -3775,13 +4035,11 @@ export function AdminStock({
                             mt-2
                           "
                         >
-
                           {formatPrice(
                             Number(
                               rate.fee
                             )
                           )}
-
                         </p>
 
                       </div>
@@ -3892,4 +4150,4 @@ export function AdminStock({
     </div>
 
   );
-            }
+                                      }
