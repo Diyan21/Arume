@@ -1,25 +1,13 @@
 import React, { useRef, useState } from 'react';
 import {
   X,
-  Coffee,
-  ShoppingBag,
-  Send,
   Plus,
   Minus,
-  Star,
-  Heart,
   CreditCard,
   Loader2,
 } from 'lucide-react';
 
 import { CoffeeMenuItem } from '../types';
-import { CONTACT_INFO } from '../data/coffeeData';
-
-declare global {
-  interface Window {
-    snap: any;
-  }
-}
 
 interface OrderModalProps {
   item: CoffeeMenuItem | null;
@@ -35,44 +23,63 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const [sugarLevel, setSugarLevel] = useState('Gula Normal');
   const [notes, setNotes] = useState('');
 
+  // ================================
   // CUSTOMER DATA
+  // ================================
   const [customerName, setCustomerName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
 
+  // ================================
   // LOADING STATE
+  // ================================
   const [loading, setLoading] = useState(false);
 
+  // ================================
   // CHECKOUT IDEMPOTENCY
-  // Satu checkout = satu checkout_id
+  // ================================
+  // Satu proses checkout = satu checkout_id.
   // Kalau user double click / retry request,
-  // checkout_id tetap sama.
+  // checkout_id tetap sama sehingga order
+  // tidak dibuat berkali-kali.
   const checkoutIdRef = useRef<string | null>(null);
 
-  if (!item) return null;
+  if (!item) {
+    return null;
+  }
 
   const totalPrice = item.price * quantity;
+
   const formattedTotalPrice =
     `Rp${totalPrice.toLocaleString('id-ID')}`;
 
   // ================================
-  // HANDLER CHECKOUT MIDTRANS
+  // HANDLER CHECKOUT XENDIT
   // ================================
-  const handleCheckoutMidtrans = async () => {
+  const handleCheckoutXendit = async () => {
+    // ================================
     // VALIDASI CUSTOMER
-    if (!customerName || !customerEmail) {
-      alert(
-        'Mohon isi nama dan email Anda terlebih dahulu.'
-      );
+    // ================================
+    if (!customerName.trim()) {
+      alert('Mohon isi nama Anda terlebih dahulu.');
       return;
     }
 
+    if (!customerEmail.trim()) {
+      alert('Mohon isi email Anda terlebih dahulu.');
+      return;
+    }
+
+    // ================================
     // ANTI DOUBLE CLICK
+    // ================================
     if (loading) {
       return;
     }
 
+    // ================================
     // GENERATE CHECKOUT ID
+    // ================================
     if (!checkoutIdRef.current) {
       checkoutIdRef.current = crypto.randomUUID();
     }
@@ -82,8 +89,11 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     setLoading(true);
 
     try {
-      // CREATE ORDER VIA API
-      const response = await fetch(
+      // ==========================================
+      // STEP 1
+      // CREATE ORDER VIA ARUME API
+      // ==========================================
+      const orderResponse = await fetch(
         'https://arume-coffee-api-2.diyanaxl.workers.dev/api/orders',
         {
           method: 'POST',
@@ -96,10 +106,14 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             checkout_id: checkoutId,
 
             customer: {
-              name: customerName,
-              email: customerEmail,
+              name: customerName.trim(),
+              email: customerEmail.trim(),
+
+              // Backend saat ini membutuhkan phone.
+              // Kalau user tidak isi,
+              // kirim fallback sementara.
               phone:
-                customerPhone ||
+                customerPhone.trim() ||
                 '081234567890',
             },
 
@@ -112,113 +126,188 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
             notes:
               `${iceLevel}, ${sugarLevel}${
-                notes
-                  ? ` - ${notes}`
+                notes.trim()
+                  ? ` - ${notes.trim()}`
                   : ''
               }`,
           }),
         }
       );
 
-      const result = await response.json();
+      // ==========================================
+      // PARSE RESPONSE ORDER
+      // ==========================================
+      let orderResult: any;
 
-      // MIDTRANS SNAP
-      if (
-        response.ok &&
-        result.success &&
-        result.data?.payment?.token
-      ) {
-        window.snap.pay(
-          result.data.payment.token,
-          {
-            // PAYMENT SUCCESS
-            onSuccess: function (res: any) {
-              alert(
-                'Pembayaran Berhasil! Pesanan Anda sedang diproses.'
-              );
-
-              console.log(
-                'Success:',
-                res
-              );
-
-              // Checkout selesai
-              checkoutIdRef.current = null;
-
-              onClose();
-            },
-
-            // PAYMENT PENDING
-            onPending: function (res: any) {
-              alert(
-                'Menunggu pembayaran diselesaikan.'
-              );
-
-              console.log(
-                'Pending:',
-                res
-              );
-
-              // Jangan reset checkout id
-              // order masih pending
-              onClose();
-            },
-
-            // PAYMENT ERROR
-            onError: function (err: any) {
-              alert(
-                'Pembayaran gagal, silakan coba lagi.'
-              );
-
-              console.error(
-                'Error:',
-                err
-              );
-
-              // Jangan reset checkout id
-              // supaya retry tidak bikin order baru
-            },
-
-            // POPUP CLOSED
-            onClose: function () {
-              alert(
-                'Anda membatalkan pembayaran.'
-              );
-
-              // Jangan reset checkout id
-              // karena order sudah dibuat
-            },
-          }
-        );
-      } else {
-        alert(
-          'Gagal membuat pesanan: ' +
-            (
-              result.message ||
-              result.error ||
-              'Error Server'
-            )
+      try {
+        orderResult = await orderResponse.json();
+      } catch {
+        throw new Error(
+          'Response dari server order tidak valid.'
         );
       }
 
+      console.log(
+        'Create order response:',
+        orderResult
+      );
+
+      // ==========================================
+      // VALIDASI CREATE ORDER
+      // ==========================================
+      if (
+        !orderResponse.ok ||
+        !orderResult?.success
+      ) {
+        throw new Error(
+          orderResult?.message ||
+            orderResult?.error ||
+            'Gagal membuat pesanan.'
+        );
+      }
+
+      // ==========================================
+      // AMBIL ORDER NUMBER
+      // ==========================================
+      const orderNumber =
+        orderResult?.data?.order_number ||
+        orderResult?.data?.order?.order_number ||
+        orderResult?.order_number ||
+        orderResult?.order?.order_number;
+
+      if (!orderNumber) {
+        console.error(
+          'Order number tidak ditemukan:',
+          orderResult
+        );
+
+        throw new Error(
+          'Pesanan berhasil dibuat, tetapi order_number tidak ditemukan.'
+        );
+      }
+
+      console.log(
+        'Order berhasil dibuat:',
+        orderNumber
+      );
+
+      // ==========================================
+      // STEP 2
+      // CREATE XENDIT PAYMENT SESSION
+      // ==========================================
+      const paymentResponse = await fetch(
+        'https://arume-coffee-api-2.diyanaxl.workers.dev/api/payment/create',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json',
+          },
+
+          body: JSON.stringify({
+            order_number: orderNumber,
+          }),
+        }
+      );
+
+      // ==========================================
+      // PARSE RESPONSE PAYMENT
+      // ==========================================
+      let paymentResult: any;
+
+      try {
+        paymentResult =
+          await paymentResponse.json();
+      } catch {
+        throw new Error(
+          'Response dari server pembayaran tidak valid.'
+        );
+      }
+
+      console.log(
+        'Create Xendit payment response:',
+        paymentResult
+      );
+
+      // ==========================================
+      // VALIDASI CREATE PAYMENT
+      // ==========================================
+      if (
+        !paymentResponse.ok ||
+        !paymentResult?.success
+      ) {
+        throw new Error(
+          paymentResult?.message ||
+            paymentResult?.error ||
+            'Gagal membuat pembayaran Xendit.'
+        );
+      }
+
+      // ==========================================
+      // AMBIL PAYMENT URL XENDIT
+      // ==========================================
+      const paymentUrl =
+        paymentResult?.data?.redirect_url ||
+        paymentResult?.data?.payment_link_url ||
+        paymentResult?.data?.payment_url ||
+
+        paymentResult?.data?.payment?.redirect_url ||
+        paymentResult?.data?.payment?.payment_link_url ||
+        paymentResult?.data?.payment?.payment_url ||
+
+        paymentResult?.redirect_url ||
+        paymentResult?.payment_link_url ||
+        paymentResult?.payment_url;
+
+      if (!paymentUrl) {
+        console.error(
+          'Payment URL tidak ditemukan:',
+          paymentResult
+        );
+
+        throw new Error(
+          'Payment Xendit berhasil dibuat, tetapi payment URL tidak ditemukan.'
+        );
+      }
+
+      console.log(
+        'Redirect ke Xendit:',
+        paymentUrl
+      );
+
+      // ==========================================
+      // ORDER SUDAH BERHASIL
+      // ==========================================
+      // Reset checkout ID supaya transaksi
+      // berikutnya membuat checkout baru.
+      checkoutIdRef.current = null;
+
+      // ==========================================
+      // REDIRECT USER KE XENDIT CHECKOUT
+      // ==========================================
+      window.location.href = paymentUrl;
     } catch (error: any) {
       console.error(
-        'Checkout error:',
+        'Checkout Xendit error:',
         error
       );
 
       alert(
-        'Terjadi kesalahan koneksi ke server API: ' +
+        'Gagal melanjutkan pembayaran: ' +
           (
             error?.message ||
-            error
+            'Terjadi kesalahan pada server.'
           )
       );
 
-      // Checkout ID tetap disimpan.
-      // Kalau request sebenarnya masuk API
-      // tetapi response putus,
-      // retry berikutnya tetap aman.
+      // Jangan reset checkoutIdRef di sini.
+      //
+      // Kalau order sebenarnya sudah berhasil
+      // tetapi request payment gagal,
+      // retry akan menggunakan checkout_id
+      // yang sama.
+      //
+      // Ini mencegah order ganda.
     } finally {
       setLoading(false);
     }
@@ -257,8 +346,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           duration-300
         "
       >
-
-        {/* CLOSE BUTTON */}
+        {/* ================================
+            CLOSE BUTTON
+        ================================= */}
         <button
           onClick={onClose}
           disabled={loading}
@@ -287,7 +377,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        {/* HEADER IMAGE */}
+        {/* ================================
+            HEADER IMAGE
+        ================================= */}
         <div
           className="
             relative
@@ -327,6 +419,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               flex
               items-end
               justify-between
+              gap-4
             "
           >
             <div>
@@ -385,7 +478,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           </div>
         </div>
 
-        {/* MODAL BODY */}
+        {/* ================================
+            MODAL BODY
+        ================================= */}
         <div
           className="
             p-6
@@ -394,6 +489,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             overflow-y-auto
           "
         >
+          {/* DESCRIPTION */}
           <p
             className="
               text-sm
@@ -405,7 +501,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             {item.description}
           </p>
 
-          {/* CUSTOMER FORM */}
+          {/* ================================
+              CUSTOMER FORM
+          ================================= */}
           <div
             className="
               space-y-3
@@ -434,6 +532,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 gap-3
               "
             >
+              {/* NAME */}
               <input
                 type="text"
                 placeholder="Nama Lengkap *"
@@ -462,6 +561,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 required
               />
 
+              {/* EMAIL */}
               <input
                 type="email"
                 placeholder="Email *"
@@ -491,6 +591,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               />
             </div>
 
+            {/* PHONE */}
             <input
               type="tel"
               placeholder="Nomor WhatsApp"
@@ -519,7 +620,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             />
           </div>
 
-          {/* QUANTITY */}
+          {/* ================================
+              QUANTITY
+          ================================= */}
           <div
             className="
               flex
@@ -549,7 +652,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 gap-3
               "
             >
+              {/* MINUS */}
               <button
+                type="button"
                 onClick={() =>
                   setQuantity(
                     Math.max(
@@ -577,6 +682,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 <Minus className="w-4 h-4" />
               </button>
 
+              {/* QUANTITY NUMBER */}
               <span
                 className="
                   font-bold
@@ -589,7 +695,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 {quantity}
               </span>
 
+              {/* PLUS */}
               <button
+                type="button"
                 onClick={() =>
                   setQuantity(
                     quantity + 1
@@ -616,7 +724,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </div>
           </div>
 
-          {/* ICE & SUGAR */}
+          {/* ================================
+              ICE & SUGAR
+          ================================= */}
           <div
             className="
               grid
@@ -624,6 +734,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               gap-3
             "
           >
+            {/* ICE */}
             <div>
               <label
                 className="
@@ -675,6 +786,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               </select>
             </div>
 
+            {/* SUGAR */}
             <div>
               <label
                 className="
@@ -731,7 +843,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </div>
           </div>
 
-          {/* NOTES */}
+          {/* ================================
+              NOTES
+          ================================= */}
           <div>
             <label
               className="
@@ -775,7 +889,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           </div>
         </div>
 
-        {/* MODAL FOOTER */}
+        {/* ================================
+            MODAL FOOTER
+        ================================= */}
         <div
           className="
             p-6
@@ -788,6 +904,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             gap-4
           "
         >
+          {/* TOTAL */}
           <div>
             <span
               className="
@@ -812,9 +929,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </span>
           </div>
 
-          {/* PAY BUTTON */}
+          {/* ================================
+              PAY BUTTON
+          ================================= */}
           <button
-            onClick={handleCheckoutMidtrans}
+            type="button"
+            onClick={handleCheckoutXendit}
             disabled={loading}
             className="
               gold-gradient-btn
