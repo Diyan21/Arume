@@ -31,7 +31,10 @@ type OrderStatusData = {
 
 type OrderStatusProps = {
   orderNumber: string;
-  onClose: () => void;
+
+  onClose: (
+    finalStatus?: string
+  ) => void;
 };
 
 
@@ -80,6 +83,10 @@ export function OrderStatus({
     );
 
 
+  /* =========================================================
+     FORMAT PRICE
+     ========================================================= */
+
   const formatPrice =
     (
       value:
@@ -106,6 +113,10 @@ export function OrderStatus({
       );
     };
 
+
+  /* =========================================================
+     LOAD STATUS
+     ========================================================= */
 
   const loadStatus =
     async (
@@ -253,6 +264,10 @@ export function OrderStatus({
     };
 
 
+  /* =========================================================
+     FIRST LOAD
+     ========================================================= */
+
   useEffect(
     () => {
 
@@ -264,6 +279,10 @@ export function OrderStatus({
     ]
   );
 
+
+  /* =========================================================
+     AUTO REFRESH 5 SECONDS
+     ========================================================= */
 
   useEffect(
     () => {
@@ -294,6 +313,10 @@ export function OrderStatus({
     ]
   );
 
+
+  /* =========================================================
+     VISUAL STATUS
+     ========================================================= */
 
   const visual =
     useMemo(
@@ -444,6 +467,10 @@ export function OrderStatus({
     visual.icon;
 
 
+  /* =========================================================
+     LOADING SCREEN
+     ========================================================= */
+
   if (
     loading &&
     !order
@@ -492,6 +519,10 @@ export function OrderStatus({
   }
 
 
+  /* =========================================================
+     UI
+     ========================================================= */
+
   return (
 
     <div
@@ -523,6 +554,10 @@ export function OrderStatus({
           "
         >
 
+
+          {/* =================================================
+              HEADER
+              ================================================= */}
 
           <div
             className="
@@ -583,6 +618,10 @@ export function OrderStatus({
           </div>
 
 
+          {/* =================================================
+              ERROR
+              ================================================= */}
+
           {error && (
 
             <div
@@ -604,6 +643,10 @@ export function OrderStatus({
 
           )}
 
+
+          {/* =================================================
+              STATUS CARD
+              ================================================= */}
 
           <div
             className={`
@@ -646,6 +689,10 @@ export function OrderStatus({
 
           </div>
 
+
+          {/* =================================================
+              ORDER DETAIL
+              ================================================= */}
 
           <div
             className="
@@ -846,6 +893,10 @@ export function OrderStatus({
           </div>
 
 
+          {/* =================================================
+              BUTTONS
+              ================================================= */}
+
           <div
             className="
               mt-4
@@ -875,6 +926,7 @@ export function OrderStatus({
                 gap-2
                 hover:border-[#d4af37]
                 transition
+                disabled:opacity-50
               "
             >
 
@@ -897,9 +949,13 @@ export function OrderStatus({
 
             <button
               type="button"
-              onClick={
-                onClose
-              }
+              onClick={() => {
+
+                onClose(
+                  order?.status
+                );
+
+              }}
               className="
                 rounded-xl
                 bg-[#d4af37]
