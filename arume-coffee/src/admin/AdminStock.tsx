@@ -20,6 +20,7 @@ import {
   Save,
   ShoppingBag,
   Store,
+  Trash2,
   Truck,
   XCircle
 } from 'lucide-react';
@@ -257,6 +258,15 @@ export function AdminStock({
   const [
     updatingOrderNumber,
     setUpdatingOrderNumber
+  ] =
+    useState<string | null>(
+      null
+    );
+
+
+  const [
+    deletingOrderNumber,
+    setDeletingOrderNumber
   ] =
     useState<string | null>(
       null
@@ -1468,6 +1478,148 @@ export function AdminStock({
 
 
   /* =========================================================
+     DELETE ORDER
+     ========================================================= */
+
+  const deleteOrder =
+    async (
+      order:
+        AdminOrder
+    ) => {
+
+      const confirmed =
+        window.confirm(
+          `Hapus pesanan ${order.order_number}?\n\nPesanan ini akan dihapus permanen.`
+        );
+
+
+      if (
+        !confirmed
+      ) {
+
+        return;
+      }
+
+
+      setDeletingOrderNumber(
+        order.order_number
+      );
+
+
+      setMessage(
+        ''
+      );
+
+
+      setError(
+        ''
+      );
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/admin/orders/${encodeURIComponent(
+              order.order_number
+            )}`,
+            {
+              method:
+                'DELETE',
+
+              headers: {
+                'X-ADMIN-SECRET':
+                  secret
+              }
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (
+          response.status ===
+          401
+        ) {
+
+          handleUnauthorized();
+
+          return;
+        }
+
+
+        if (
+          !response.ok
+        ) {
+
+          throw new Error(
+            result?.message ||
+            result?.error ||
+            result?.details ||
+            'Gagal menghapus pesanan.'
+          );
+        }
+
+
+        /*
+         * Hapus langsung dari UI
+         * supaya terasa instan.
+         */
+
+        setOrders(
+          current =>
+            current.filter(
+              item =>
+                item.order_number !==
+                order.order_number
+            )
+        );
+
+
+        setMessage(
+          `${order.order_number}: Pesanan berhasil dihapus.`
+        );
+
+
+        /*
+         * Sinkron ulang database.
+         */
+
+        await loadOrders(
+          true
+        );
+
+
+      } catch (
+        err
+      ) {
+
+        console.error(
+          'Delete order error:',
+          err
+        );
+
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Gagal menghapus pesanan.'
+        );
+
+
+      } finally {
+
+        setDeletingOrderNumber(
+          null
+        );
+
+      }
+    };
+
+
+  /* =========================================================
      ORDER STATUS DISPLAY
      ========================================================= */
 
@@ -2385,7 +2537,7 @@ export function AdminStock({
                     : orderFilter ===
                       'pending'
                       ? 'Order yang belum dibayar akan muncul di sini.'
-                      : 'Pesanan yang sudah selesai akan tersimpan di sini.'}
+                      : 'Pesanan selesai, gagal, atau refund akan tersimpan di sini.'}
 
                 </p>
 
@@ -2415,6 +2567,11 @@ export function AdminStock({
 
                     const isUpdating =
                       updatingOrderNumber ===
+                      order.order_number;
+
+
+                    const isDeleting =
+                      deletingOrderNumber ===
                       order.order_number;
 
 
@@ -3027,7 +3184,7 @@ export function AdminStock({
 
 
                           {/* =====================================
-                              ACTION PAID
+                              PAID
                               ===================================== */}
 
                           {order.status ===
@@ -3093,7 +3250,7 @@ export function AdminStock({
 
 
                           {/* =====================================
-                              ACTION READY
+                              READY
                               ===================================== */}
 
                           {order.status ===
@@ -3204,28 +3361,94 @@ export function AdminStock({
 
                             <div
                               className="
-                                rounded-xl
-                                bg-[#17120e]
-                                border
-                                border-[#3e342b]
-                                text-[#b8ab9e]
-                                py-3
-                                flex
-                                items-center
-                                justify-center
-                                gap-2
-                                font-semibold
+                                space-y-3
                               "
                             >
 
-                              <Clock3
+                              <div
                                 className="
-                                  w-5
-                                  h-5
+                                  rounded-xl
+                                  bg-[#17120e]
+                                  border
+                                  border-[#3e342b]
+                                  text-[#b8ab9e]
+                                  py-3
+                                  flex
+                                  items-center
+                                  justify-center
+                                  gap-2
+                                  font-semibold
                                 "
-                              />
+                              >
 
-                              Menunggu Pembayaran
+                                <Clock3
+                                  className="
+                                    w-5
+                                    h-5
+                                  "
+                                />
+
+                                Menunggu Pembayaran
+
+                              </div>
+
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  deleteOrder(
+                                    order
+                                  )
+                                }
+                                disabled={
+                                  isDeleting
+                                }
+                                className="
+                                  w-full
+                                  py-3
+                                  rounded-xl
+                                  bg-red-950/30
+                                  border
+                                  border-red-500/30
+                                  text-red-300
+                                  font-bold
+                                  flex
+                                  items-center
+                                  justify-center
+                                  gap-2
+                                  hover:bg-red-950/50
+                                  disabled:opacity-50
+                                  transition
+                                "
+                              >
+
+                                {isDeleting ? (
+
+                                  <RefreshCcw
+                                    className="
+                                      w-5
+                                      h-5
+                                      animate-spin
+                                    "
+                                  />
+
+                                ) : (
+
+                                  <Trash2
+                                    className="
+                                      w-5
+                                      h-5
+                                    "
+                                  />
+
+                                )}
+
+
+                                {isDeleting
+                                  ? 'Menghapus...'
+                                  : 'Hapus Pesanan'}
+
+                              </button>
 
                             </div>
 
@@ -3241,28 +3464,94 @@ export function AdminStock({
 
                             <div
                               className="
-                                rounded-xl
-                                bg-red-950/30
-                                border
-                                border-red-500/30
-                                text-red-300
-                                py-3
-                                flex
-                                items-center
-                                justify-center
-                                gap-2
-                                font-semibold
+                                space-y-3
                               "
                             >
 
-                              <XCircle
+                              <div
                                 className="
-                                  w-5
-                                  h-5
+                                  rounded-xl
+                                  bg-red-950/30
+                                  border
+                                  border-red-500/30
+                                  text-red-300
+                                  py-3
+                                  flex
+                                  items-center
+                                  justify-center
+                                  gap-2
+                                  font-semibold
                                 "
-                              />
+                              >
 
-                              Pembayaran Gagal
+                                <XCircle
+                                  className="
+                                    w-5
+                                    h-5
+                                  "
+                                />
+
+                                Pembayaran Gagal
+
+                              </div>
+
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  deleteOrder(
+                                    order
+                                  )
+                                }
+                                disabled={
+                                  isDeleting
+                                }
+                                className="
+                                  w-full
+                                  py-3
+                                  rounded-xl
+                                  bg-red-950/30
+                                  border
+                                  border-red-500/30
+                                  text-red-300
+                                  font-bold
+                                  flex
+                                  items-center
+                                  justify-center
+                                  gap-2
+                                  hover:bg-red-950/50
+                                  disabled:opacity-50
+                                  transition
+                                "
+                              >
+
+                                {isDeleting ? (
+
+                                  <RefreshCcw
+                                    className="
+                                      w-5
+                                      h-5
+                                      animate-spin
+                                    "
+                                  />
+
+                                ) : (
+
+                                  <Trash2
+                                    className="
+                                      w-5
+                                      h-5
+                                    "
+                                  />
+
+                                )}
+
+
+                                {isDeleting
+                                  ? 'Menghapus...'
+                                  : 'Hapus Pesanan'}
+
+                              </button>
 
                             </div>
 
@@ -4150,4 +4439,4 @@ export function AdminStock({
     </div>
 
   );
-                                      }
+                                    }
