@@ -1,4 +1,5 @@
 import React, {
+  useEffect,
   useRef,
   useState
 } from 'react';
@@ -10,11 +11,22 @@ import {
   CreditCard,
   Loader2,
   MapPin,
+  Store,
+  Truck,
+  RefreshCcw
 } from 'lucide-react';
 
 import {
   CoffeeMenuItem
 } from '../types';
+
+
+/* =========================================================
+   API
+   ========================================================= */
+
+const API_BASE_URL =
+  'https://arume-coffee-api-2.diyanaxl.workers.dev';
 
 
 /* =========================================================
@@ -32,6 +44,24 @@ interface StoreLocation {
   longitude: number;
 
   postalCode: string;
+}
+
+
+/* =========================================================
+   SHIPPING RATE TYPE
+   ========================================================= */
+
+interface ShippingRate {
+
+  id: number;
+
+  min_distance: number;
+
+  max_distance: number;
+
+  fee: number;
+
+  active: boolean;
 }
 
 
@@ -63,7 +93,7 @@ React.FC<OrderModalProps> = ({
 
   storeLocation,
 
-  onClose,
+  onClose
 
 }) => {
 
@@ -140,8 +170,17 @@ React.FC<OrderModalProps> = ({
 
 
   /* =========================================================
-     OPTIONAL DELIVERY
+     DELIVERY MODE
      ========================================================= */
+
+  const [
+    deliveryEnabled,
+    setDeliveryEnabled
+  ] =
+    useState(
+      false
+    );
+
 
   const [
     deliveryAddress,
@@ -189,6 +228,33 @@ React.FC<OrderModalProps> = ({
 
 
   const [
+    shippingRates,
+    setShippingRates
+  ] =
+    useState<ShippingRate[]>(
+      []
+    );
+
+
+  const [
+    shippingLoading,
+    setShippingLoading
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
+    shippingError,
+    setShippingError
+  ] =
+    useState(
+      ''
+    );
+
+
+  const [
     locationLoading,
     setLocationLoading
   ] =
@@ -207,7 +273,7 @@ React.FC<OrderModalProps> = ({
 
 
   /* =========================================================
-     LOADING
+     CHECKOUT LOADING
      ========================================================= */
 
   const [
@@ -227,6 +293,217 @@ React.FC<OrderModalProps> = ({
     useRef<string | null>(
       null
     );
+
+
+  /* =========================================================
+     LOAD SHIPPING RATES
+     ========================================================= */
+
+  const loadShippingRates =
+    async () => {
+
+      setShippingLoading(
+        true
+      );
+
+
+      setShippingError(
+        ''
+      );
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/shipping`
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (
+          !response.ok
+        ) {
+
+          throw new Error(
+            result?.message ||
+            'Gagal mengambil tarif ongkir.'
+          );
+        }
+
+
+        const rawRates =
+          result?.data
+            ?.shipping_rates ||
+
+          result?.data
+            ?.rates ||
+
+          result?.shipping_rates ||
+
+          result?.rates ||
+
+          [];
+
+
+        const normalizedRates:
+          ShippingRate[] =
+            Array.isArray(
+              rawRates
+            )
+              ? rawRates
+                  .map(
+                    (
+                      rate:
+                      any
+                    ) => ({
+                      id:
+                        Number(
+                          rate.id
+                        ),
+
+                      min_distance:
+                        Number(
+                          rate.min_distance
+                        ),
+
+                      max_distance:
+                        Number(
+                          rate.max_distance
+                        ),
+
+                      fee:
+                        Number(
+                          rate.fee
+                        ),
+
+                      active:
+                        rate.active !==
+                        false
+                    })
+                  )
+                  .filter(
+                    rate =>
+                      Number.isFinite(
+                        rate.min_distance
+                      ) &&
+                      Number.isFinite(
+                        rate.max_distance
+                      ) &&
+                      Number.isFinite(
+                        rate.fee
+                      ) &&
+                      rate.active
+                  )
+                  .sort(
+                    (
+                      a,
+                      b
+                    ) =>
+                      a.max_distance -
+                      b.max_distance
+                  )
+              : [];
+
+
+        setShippingRates(
+          normalizedRates
+        );
+
+
+      } catch (
+        error
+      ) {
+
+        console.error(
+          'Load shipping rates error:',
+          error
+        );
+
+
+        setShippingRates(
+          []
+        );
+
+
+        setShippingError(
+          'Tarif ongkir belum dapat dimuat.'
+        );
+
+
+      } finally {
+
+        setShippingLoading(
+          false
+        );
+
+      }
+    };
+
+
+  useEffect(
+    () => {
+
+      loadShippingRates();
+
+    },
+    []
+  );
+
+
+  /* =========================================================
+     RESET LOCATION IF DELIVERY OFF
+     ========================================================= */
+
+  const selectPickup =
+    () => {
+
+      setDeliveryEnabled(
+        false
+      );
+
+
+      setCustomerLatitude(
+        null
+      );
+
+
+      setCustomerLongitude(
+        null
+      );
+
+
+      setDistanceKm(
+        null
+      );
+
+
+      setShippingFee(
+        0
+      );
+
+
+      setDeliveryAvailable(
+        true
+      );
+    };
+
+
+  const selectDelivery =
+    () => {
+
+      setDeliveryEnabled(
+        true
+      );
+
+
+      setDeliveryAvailable(
+        true
+      );
+    };
 
 
   /* =========================================================
@@ -277,12 +554,7 @@ React.FC<OrderModalProps> = ({
         Math.sin(
           latitudeDistance /
           2
-        ) *
-
-        Math.sin(
-          latitudeDistance /
-          2
-        ) +
+        ) ** 2 +
 
         Math.cos(
           toRadians(
@@ -299,12 +571,7 @@ React.FC<OrderModalProps> = ({
         Math.sin(
           longitudeDistance /
           2
-        ) *
-
-        Math.sin(
-          longitudeDistance /
-          2
-        );
+        ) ** 2;
 
 
       const c =
@@ -318,7 +585,8 @@ React.FC<OrderModalProps> = ({
           ),
 
           Math.sqrt(
-            1 - a
+            1 -
+            a
           )
 
         );
@@ -332,7 +600,7 @@ React.FC<OrderModalProps> = ({
 
 
   /* =========================================================
-     SHIPPING FEE
+     FIND SHIPPING FEE
      ========================================================= */
 
   const calculateShippingFee =
@@ -340,43 +608,73 @@ React.FC<OrderModalProps> = ({
       distance: number
     ) => {
 
+      const sortedRates =
+        [
+          ...shippingRates
+        ].sort(
+          (
+            a,
+            b
+          ) =>
+            Number(
+              a.max_distance
+            ) -
+            Number(
+              b.max_distance
+            )
+        );
+
+
+      /*
+       * Kita urutkan max_distance.
+       *
+       * Contoh:
+       * 0 - 2
+       * 2 - 5
+       *
+       * Jarak tepat 2 KM
+       * akan mengambil rate pertama.
+       */
+
+      const matchedRate =
+        sortedRates.find(
+          rate => {
+
+            const min =
+              Number(
+                rate.min_distance
+              );
+
+
+            const max =
+              Number(
+                rate.max_distance
+              );
+
+
+            return (
+              distance >=
+              min
+            ) &&
+            (
+              distance <=
+              max
+            );
+          }
+        );
+
+
       if (
-        distance <=
-        2
+        !matchedRate
       ) {
 
-        return 5000;
+        return null;
       }
 
 
-      if (
-        distance <=
-        5
-      ) {
-
-        return 10000;
-      }
-
-
-      if (
-        distance <=
-        8
-      ) {
-
-        return 15000;
-      }
-
-
-      if (
-        distance <=
-        12
-      ) {
-
-        return 20000;
-      }
-
-
-      return null;
+      return Number(
+        matchedRate.fee
+      );
     };
 
 
@@ -386,6 +684,27 @@ React.FC<OrderModalProps> = ({
 
   const handleGetLocation =
     () => {
+
+      if (
+        !deliveryEnabled
+      ) {
+
+        return;
+      }
+
+
+      if (
+        shippingRates.length ===
+        0
+      ) {
+
+        alert(
+          'Tarif ongkir belum tersedia. Silakan coba refresh tarif terlebih dahulu.'
+        );
+
+        return;
+      }
+
 
       if (
         !navigator.geolocation
@@ -450,12 +769,11 @@ React.FC<OrderModalProps> = ({
 
 
             const roundedDistance =
-
               Math.round(
                 distance *
-                10
+                100
               ) /
-              10;
+              100;
 
 
             setDistanceKm(
@@ -465,7 +783,7 @@ React.FC<OrderModalProps> = ({
 
             const fee =
               calculateShippingFee(
-                distance
+                roundedDistance
               );
 
 
@@ -519,8 +837,42 @@ React.FC<OrderModalProps> = ({
             );
 
 
+            let message =
+              'Lokasi tidak dapat diakses. Pastikan izin lokasi browser sudah aktif.';
+
+
+            if (
+              error.code ===
+              error.PERMISSION_DENIED
+            ) {
+
+              message =
+                'Izin lokasi ditolak. Silakan aktifkan izin lokasi pada browser lalu coba lagi.';
+            }
+
+
+            if (
+              error.code ===
+              error.POSITION_UNAVAILABLE
+            ) {
+
+              message =
+                'Lokasi saat ini tidak dapat ditemukan. Silakan coba kembali.';
+            }
+
+
+            if (
+              error.code ===
+              error.TIMEOUT
+            ) {
+
+              message =
+                'Pencarian lokasi terlalu lama. Silakan coba kembali.';
+            }
+
+
             alert(
-              'Lokasi tidak dapat diakses. Pastikan izin lokasi browser sudah aktif.'
+              message
             );
 
           },
@@ -535,7 +887,7 @@ React.FC<OrderModalProps> = ({
               10000,
 
             maximumAge:
-              30000,
+              30000
 
           }
 
@@ -561,18 +913,15 @@ React.FC<OrderModalProps> = ({
 
   const subtotal =
 
-    item.price *
+    Number(
+      item.price
+    ) *
     quantity;
 
 
-  /*
-   * Ongkir hanya ditambahkan
-   * jika lokasi customer sudah dicek
-   * dan masih dalam jangkauan.
-   */
-
   const activeShippingFee =
 
+    deliveryEnabled &&
     distanceKm !== null &&
     deliveryAvailable
 
@@ -580,6 +929,13 @@ React.FC<OrderModalProps> = ({
 
       : 0;
 
+
+  /*
+   * Ini hanya ESTIMASI tampilan.
+   *
+   * Backend tetap menghitung ulang
+   * harga produk + ongkir.
+   */
 
   const totalPrice =
 
@@ -617,7 +973,7 @@ React.FC<OrderModalProps> = ({
 
 
       /* =====================================================
-         VALIDATE CUSTOMER NAME
+         CUSTOMER VALIDATION
          ===================================================== */
 
       if (
@@ -633,28 +989,65 @@ React.FC<OrderModalProps> = ({
 
 
       /* =====================================================
-         OPTIONAL DELIVERY VALIDATION
+         DELIVERY VALIDATION
          ===================================================== */
 
-      /*
-       * Delivery tidak wajib.
-       *
-       * Tapi kalau customer sudah
-       * meminta cek lokasi dan ternyata
-       * di luar jangkauan, jangan gunakan
-       * delivery tersebut.
-       */
-
       if (
-        distanceKm !== null &&
-        !deliveryAvailable
+        deliveryEnabled
       ) {
 
-        alert(
-          'Lokasi pengiriman berada di luar jangkauan. Silakan checkout tanpa pengiriman atau hubungi Arume Coffee.'
-        );
 
-        return;
+        if (
+          !deliveryAddress.trim()
+        ) {
+
+          alert(
+            'Mohon isi alamat pengiriman terlebih dahulu.'
+          );
+
+          return;
+        }
+
+
+        if (
+          customerLatitude ===
+            null ||
+          customerLongitude ===
+            null
+        ) {
+
+          alert(
+            'Mohon tekan "Gunakan Lokasi Saya" untuk menghitung jarak dan ongkir.'
+          );
+
+          return;
+        }
+
+
+        if (
+          distanceKm ===
+            null
+        ) {
+
+          alert(
+            'Jarak pengiriman belum tersedia. Silakan cek lokasi terlebih dahulu.'
+          );
+
+          return;
+        }
+
+
+        if (
+          !deliveryAvailable
+        ) {
+
+          alert(
+            'Lokasi pengiriman berada di luar jangkauan Arume Coffee.'
+          );
+
+          return;
+        }
+
       }
 
 
@@ -671,7 +1064,7 @@ React.FC<OrderModalProps> = ({
 
 
       /* =====================================================
-         GENERATE CHECKOUT ID
+         GENERATE IDEMPOTENCY ID
          ===================================================== */
 
       if (
@@ -696,15 +1089,14 @@ React.FC<OrderModalProps> = ({
 
 
         /* ===================================================
-           STEP 1
-           CREATE ORDER
+           STEP 1 - CREATE ORDER
            =================================================== */
 
         const orderResponse =
 
           await fetch(
 
-            'https://arume-coffee-api-2.diyanaxl.workers.dev/api/orders',
+            `${API_BASE_URL}/api/orders`,
 
             {
 
@@ -715,7 +1107,7 @@ React.FC<OrderModalProps> = ({
               headers: {
 
                 'Content-Type':
-                  'application/json',
+                  'application/json'
 
               },
 
@@ -744,28 +1136,37 @@ React.FC<OrderModalProps> = ({
                     phone:
                       customerPhone
                         .trim() ||
-                      null,
+                      null
 
                   },
 
 
                   /* =========================================
-                     OPTIONAL DELIVERY
+                     DELIVERY
+
+                     TIDAK mengirim shipping_fee.
+                     TIDAK mengirim distance_km.
+
+                     Backend menghitung ulang.
                      ========================================= */
 
                   delivery:
 
-                    customerLatitude !== null &&
-                    customerLongitude !== null &&
-                    deliveryAvailable
+                    deliveryEnabled
 
                       ? {
 
-                          address:
+                          enabled:
+                            true,
 
+
+                          type:
+                            'delivery',
+
+
+                          address:
                             deliveryAddress
-                              .trim() ||
-                            null,
+                              .trim(),
 
 
                           latitude:
@@ -773,26 +1174,20 @@ React.FC<OrderModalProps> = ({
 
 
                           longitude:
-                            customerLongitude,
-
-
-                          distance_km:
-                            distanceKm,
-
-
-                          /*
-                           * HANYA INFORMASI FRONTEND.
-                           *
-                           * Backend nantinya harus
-                           * menghitung ulang sendiri.
-                           */
-
-                          shipping_fee:
-                            activeShippingFee,
+                            customerLongitude
 
                         }
 
-                      : null,
+                      : {
+
+                          enabled:
+                            false,
+
+
+                          type:
+                            'pickup'
+
+                        },
 
 
                   /* =========================================
@@ -808,9 +1203,9 @@ React.FC<OrderModalProps> = ({
 
 
                       quantity:
-                        quantity,
+                        quantity
 
-                    },
+                    }
 
                   ],
 
@@ -827,9 +1222,9 @@ React.FC<OrderModalProps> = ({
                         ? ` - ${notes.trim()}`
 
                         : ''
-                    }`,
+                    }`
 
-                }),
+                })
 
             }
 
@@ -860,12 +1255,35 @@ React.FC<OrderModalProps> = ({
 
 
         console.log(
-
           'Create order response:',
-
           orderResult
-
         );
+
+
+        /* ===================================================
+           CHECK HTTP ERROR
+           =================================================== */
+
+        if (
+          !orderResponse.ok
+        ) {
+
+          throw new Error(
+
+            orderResult
+              ?.message ||
+
+            orderResult
+              ?.error ||
+
+            orderResult
+              ?.details ||
+
+            'Gagal membuat pesanan.'
+
+          );
+
+        }
 
 
         /* ===================================================
@@ -905,20 +1323,13 @@ React.FC<OrderModalProps> = ({
             ?.order_number;
 
 
-        /* ===================================================
-           VALIDATE ORDER
-           =================================================== */
-
         if (
           !orderNumber
         ) {
 
           console.error(
-
             'Order number tidak ditemukan:',
-
             orderResult
-
           );
 
 
@@ -937,25 +1348,59 @@ React.FC<OrderModalProps> = ({
         }
 
 
+        /* ===================================================
+           TRUSTED TOTAL FROM BACKEND
+           =================================================== */
+
+        const backendTotal =
+
+          Number(
+
+            orderResult?.data
+              ?.total_amount ??
+
+            orderResult
+              ?.total_amount ??
+
+            0
+
+          );
+
+
+        const backendShippingFee =
+
+          Number(
+
+            orderResult?.data
+              ?.shipping_fee ??
+
+            orderResult
+              ?.shipping_fee ??
+
+            0
+
+          );
+
+
         console.log(
-
           'Order siap digunakan:',
-
-          orderNumber
-
+          {
+            orderNumber,
+            backendTotal,
+            backendShippingFee
+          }
         );
 
 
         /* ===================================================
-           STEP 2
-           CREATE / REUSE XENDIT PAYMENT
+           STEP 2 - CREATE XENDIT PAYMENT
            =================================================== */
 
         const paymentResponse =
 
           await fetch(
 
-            'https://arume-coffee-api-2.diyanaxl.workers.dev/api/payment/create',
+            `${API_BASE_URL}/api/payment/create`,
 
             {
 
@@ -966,7 +1411,7 @@ React.FC<OrderModalProps> = ({
               headers: {
 
                 'Content-Type':
-                  'application/json',
+                  'application/json'
 
               },
 
@@ -974,10 +1419,17 @@ React.FC<OrderModalProps> = ({
               body:
                 JSON.stringify({
 
-                  order_number:
-                    orderNumber,
+                  /*
+                   * Nominal TIDAK dikirim.
+                   *
+                   * Backend payment.js akan
+                   * mengambil orders.total_amount.
+                   */
 
-                }),
+                  order_number:
+                    orderNumber
+
+                })
 
             }
 
@@ -1008,12 +1460,28 @@ React.FC<OrderModalProps> = ({
 
 
         console.log(
-
           'Create Xendit payment response:',
-
           paymentResult
-
         );
+
+
+        if (
+          !paymentResponse.ok
+        ) {
+
+          throw new Error(
+
+            paymentResult
+              ?.message ||
+
+            paymentResult
+              ?.error ||
+
+            'Gagal membuat pembayaran Xendit.'
+
+          );
+
+        }
 
 
         /* ===================================================
@@ -1050,23 +1518,24 @@ React.FC<OrderModalProps> = ({
             ?.payment_link_url ||
 
           paymentResult
-            ?.payment_url;
+            ?.payment_url ||
 
+          paymentResult
+            ?.payment
+            ?.redirect_url ||
 
-        /* ===================================================
-           VALIDATE PAYMENT URL
-           =================================================== */
+          paymentResult
+            ?.payment
+            ?.payment_link_url;
+
 
         if (
           !paymentUrl
         ) {
 
           console.error(
-
             'Payment URL tidak ditemukan:',
-
             paymentResult
-
           );
 
 
@@ -1085,17 +1554,8 @@ React.FC<OrderModalProps> = ({
         }
 
 
-        console.log(
-
-          'Redirect ke Xendit:',
-
-          paymentUrl
-
-        );
-
-
         /* ===================================================
-           RESET CHECKOUT ID
+           RESET IDEMPOTENCY ONLY AFTER PAYMENT CREATED
            =================================================== */
 
         checkoutIdRef.current =
@@ -1111,18 +1571,25 @@ React.FC<OrderModalProps> = ({
 
 
       } catch (
-        error: any
+        error:
+        any
       ) {
 
 
         console.error(
-
           'Checkout Xendit error:',
-
           error
-
         );
 
+
+        /*
+         * checkoutIdRef sengaja TIDAK
+         * direset kalau error.
+         *
+         * Retry menggunakan checkout_id
+         * yang sama sehingga tidak
+         * membuat order duplicate.
+         */
 
         alert(
 
@@ -1474,13 +1941,9 @@ React.FC<OrderModalProps> = ({
 
               <input
 
-                type="
-                  text
-                "
+                type="text"
 
-                placeholder="
-                  Nama Lengkap *
-                "
+                placeholder="Nama Lengkap *"
 
                 value={
                   customerName
@@ -1521,13 +1984,9 @@ React.FC<OrderModalProps> = ({
 
               <input
 
-                type="
-                  email
-                "
+                type="email"
 
-                placeholder="
-                  Email (Opsional)
-                "
+                placeholder="Email (Opsional)"
 
                 value={
                   customerEmail
@@ -1571,13 +2030,9 @@ React.FC<OrderModalProps> = ({
 
             <input
 
-              type="
-                tel
-              "
+              type="tel"
 
-              placeholder="
-                Nomor WhatsApp (Opsional)
-              "
+              placeholder="Nomor WhatsApp (Opsional)"
 
               value={
                 customerPhone
@@ -1619,12 +2074,12 @@ React.FC<OrderModalProps> = ({
           </div>
 
 
-          {/* OPTIONAL DELIVERY */}
+          {/* DELIVERY MODE */}
 
           <div
 
             className="
-              space-y-3
+              space-y-4
               pt-3
               border-t
               border-[#2a2018]
@@ -1633,17 +2088,7 @@ React.FC<OrderModalProps> = ({
           >
 
 
-            <div
-
-              className="
-                flex
-                items-center
-                justify-between
-                gap-3
-              "
-
-            >
-
+            <div>
 
               <span
 
@@ -1657,217 +2102,490 @@ React.FC<OrderModalProps> = ({
 
               >
 
-                Pengiriman
+                Metode Pengambilan
 
               </span>
 
 
-              <span
-
+              <p
                 className="
-                  text-[10px]
+                  text-xs
                   text-[#8e8072]
-                  uppercase
+                  mt-1
                 "
+              >
+
+                Pilih ambil sendiri atau dikirim ke lokasi Anda.
+
+              </p>
+
+            </div>
+
+
+            {/* MODE BUTTONS */}
+
+            <div
+              className="
+                grid
+                grid-cols-2
+                gap-3
+              "
+            >
+
+
+              <button
+
+                type="button"
+
+                onClick={
+                  selectPickup
+                }
+
+                disabled={
+                  loading
+                }
+
+                className={`
+                  rounded-2xl
+                  p-4
+                  border
+                  transition-all
+                  text-left
+                  ${
+                    !deliveryEnabled
+                      ? 'border-[#d4af37] bg-[#d4af37]/10'
+                      : 'border-[#382d24] bg-[#18120d]'
+                  }
+                `}
 
               >
 
-                Opsional
+                <Store
+                  className={`
+                    w-5
+                    h-5
+                    mb-2
+                    ${
+                      !deliveryEnabled
+                        ? 'text-[#d4af37]'
+                        : 'text-[#8e8072]'
+                    }
+                  `}
+                />
 
-              </span>
+
+                <p
+                  className="
+                    text-sm
+                    font-bold
+                    text-white
+                  "
+                >
+                  Ambil Sendiri
+                </p>
+
+
+                <p
+                  className="
+                    text-[11px]
+                    text-[#8e8072]
+                    mt-1
+                  "
+                >
+                  Tanpa ongkir
+                </p>
+
+              </button>
+
+
+              <button
+
+                type="button"
+
+                onClick={
+                  selectDelivery
+                }
+
+                disabled={
+                  loading
+                }
+
+                className={`
+                  rounded-2xl
+                  p-4
+                  border
+                  transition-all
+                  text-left
+                  ${
+                    deliveryEnabled
+                      ? 'border-[#d4af37] bg-[#d4af37]/10'
+                      : 'border-[#382d24] bg-[#18120d]'
+                  }
+                `}
+
+              >
+
+                <Truck
+                  className={`
+                    w-5
+                    h-5
+                    mb-2
+                    ${
+                      deliveryEnabled
+                        ? 'text-[#d4af37]'
+                        : 'text-[#8e8072]'
+                    }
+                  `}
+                />
+
+
+                <p
+                  className="
+                    text-sm
+                    font-bold
+                    text-white
+                  "
+                >
+                  Delivery
+                </p>
+
+
+                <p
+                  className="
+                    text-[11px]
+                    text-[#8e8072]
+                    mt-1
+                  "
+                >
+                  Ongkir berdasarkan jarak
+                </p>
+
+              </button>
 
 
             </div>
 
 
-            <textarea
-
-              placeholder="
-                Alamat pengiriman (Opsional)
-              "
-
-              value={
-                deliveryAddress
-              }
-
-              onChange={
-                (
-                  e
-                ) =>
-
-                  setDeliveryAddress(
-                    e.target.value
-                  )
-              }
-
-              disabled={
-                loading
-              }
-
-              rows={
-                2
-              }
-
-              className="
-                w-full
-                bg-[#18120d]
-                border
-                border-[#d4af37]/30
-                rounded-xl
-                px-3.5
-                py-2.5
-                text-sm
-                text-white
-                placeholder-[#605448]
-                focus:outline-none
-                focus:border-[#d4af37]
-                resize-none
-                disabled:opacity-50
-              "
-
-            />
-
-
-            <button
-
-              type="
-                button
-              "
-
-              onClick={
-                handleGetLocation
-              }
-
-              disabled={
-                loading ||
-                locationLoading
-              }
-
-              className="
-                w-full
-                py-2.5
-                rounded-xl
-                border
-                border-[#d4af37]/40
-                bg-[#251c14]
-                text-[#d4af37]
-                text-sm
-                font-semibold
-                flex
-                items-center
-                justify-center
-                gap-2
-                hover:border-[#d4af37]
-                transition-colors
-                disabled:opacity-50
-              "
-
-            >
-
-
-              {
-                locationLoading
-
-                  ? (
-
-                    <>
-
-                      <Loader2
-                        className="
-                          w-4
-                          h-4
-                          animate-spin
-                        "
-                      />
-
-                      Mengecek lokasi...
-
-                    </>
-
-                  )
-
-                  : (
-
-                    <>
-
-                      <MapPin
-                        className="
-                          w-4
-                          h-4
-                        "
-                      />
-
-                      Gunakan Lokasi Saya
-
-                    </>
-
-                  )
-              }
-
-
-            </button>
-
+            {/* PICKUP INFO */}
 
             {
-
-              distanceKm !== null && (
+              !deliveryEnabled && (
 
                 <div
-
                   className="
-                    bg-[#18120d]
                     rounded-xl
+                    bg-[#18120d]
                     border
-                    border-[#d4af37]/20
-                    p-3
-                    space-y-2
+                    border-[#30261e]
+                    p-3.5
                   "
+                >
 
+                  <div
+                    className="
+                      flex
+                      gap-3
+                      items-start
+                    "
+                  >
+
+                    <Store
+                      className="
+                        w-4
+                        h-4
+                        text-[#d4af37]
+                        mt-0.5
+                        shrink-0
+                      "
+                    />
+
+
+                    <div>
+
+                      <p
+                        className="
+                          text-xs
+                          text-white
+                          font-semibold
+                        "
+                      >
+                        {storeLocation.name}
+                      </p>
+
+
+                      <p
+                        className="
+                          text-[11px]
+                          text-[#8e8072]
+                          mt-1
+                          leading-relaxed
+                        "
+                      >
+                        {storeLocation.address}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              )
+            }
+
+
+            {/* DELIVERY FORM */}
+
+            {
+              deliveryEnabled && (
+
+                <div
+                  className="
+                    space-y-3
+                  "
                 >
 
 
-                  <div
+                  <textarea
+
+                    placeholder="Alamat lengkap pengiriman *"
+
+                    value={
+                      deliveryAddress
+                    }
+
+                    onChange={
+                      (
+                        e
+                      ) =>
+
+                        setDeliveryAddress(
+                          e.target.value
+                        )
+                    }
+
+                    disabled={
+                      loading
+                    }
+
+                    rows={
+                      3
+                    }
 
                     className="
+                      w-full
+                      bg-[#18120d]
+                      border
+                      border-[#d4af37]/30
+                      rounded-xl
+                      px-3.5
+                      py-2.5
+                      text-sm
+                      text-white
+                      placeholder-[#605448]
+                      focus:outline-none
+                      focus:border-[#d4af37]
+                      resize-none
+                      disabled:opacity-50
+                    "
+
+                  />
+
+
+                  {
+                    shippingError && (
+
+                      <div
+                        className="
+                          rounded-xl
+                          bg-red-950/20
+                          border
+                          border-red-500/20
+                          p-3
+                        "
+                      >
+
+                        <p
+                          className="
+                            text-xs
+                            text-red-300
+                          "
+                        >
+                          {shippingError}
+                        </p>
+
+
+                        <button
+
+                          type="button"
+
+                          onClick={
+                            loadShippingRates
+                          }
+
+                          disabled={
+                            shippingLoading
+                          }
+
+                          className="
+                            mt-2
+                            flex
+                            items-center
+                            gap-1.5
+                            text-xs
+                            text-[#d4af37]
+                            font-semibold
+                          "
+
+                        >
+
+                          <RefreshCcw
+                            className={`
+                              w-3.5
+                              h-3.5
+                              ${
+                                shippingLoading
+                                  ? 'animate-spin'
+                                  : ''
+                              }
+                            `}
+                          />
+
+                          Coba Lagi
+
+                        </button>
+
+                      </div>
+
+                    )
+                  }
+
+
+                  <button
+
+                    type="button"
+
+                    onClick={
+                      handleGetLocation
+                    }
+
+                    disabled={
+                      loading ||
+                      locationLoading ||
+                      shippingLoading ||
+                      shippingRates.length ===
+                        0
+                    }
+
+                    className="
+                      w-full
+                      py-2.5
+                      rounded-xl
+                      border
+                      border-[#d4af37]/40
+                      bg-[#251c14]
+                      text-[#d4af37]
+                      text-sm
+                      font-semibold
                       flex
-                      justify-between
-                      gap-3
-                      text-xs
+                      items-center
+                      justify-center
+                      gap-2
+                      hover:border-[#d4af37]
+                      transition-colors
+                      disabled:opacity-50
                     "
 
                   >
 
-                    <span
-                      className="
-                        text-[#8e8072]
-                      "
-                    >
 
-                      Jarak
+                    {
+                      locationLoading
 
-                    </span>
+                        ? (
+
+                          <>
+
+                            <Loader2
+                              className="
+                                w-4
+                                h-4
+                                animate-spin
+                              "
+                            />
+
+                            Mengecek lokasi...
+
+                          </>
+
+                        )
+
+                        : shippingLoading
+
+                          ? (
+
+                            <>
+
+                              <Loader2
+                                className="
+                                  w-4
+                                  h-4
+                                  animate-spin
+                                "
+                              />
+
+                              Memuat ongkir...
+
+                            </>
+
+                          )
+
+                          : (
+
+                            <>
+
+                              <MapPin
+                                className="
+                                  w-4
+                                  h-4
+                                "
+                              />
+
+                              {
+                                distanceKm !==
+                                null
+                                  ? 'Perbarui Lokasi Saya'
+                                  : 'Gunakan Lokasi Saya'
+                              }
+
+                            </>
+
+                          )
+                    }
 
 
-                    <span
-                      className="
-                        text-white
-                        font-semibold
-                      "
-                    >
-
-                      {distanceKm} km
-
-                    </span>
+                  </button>
 
 
-                  </div>
-
+                  {/* LOCATION RESULT */}
 
                   {
+                    distanceKm !==
+                    null && (
 
-                    deliveryAvailable
+                      <div
 
-                      ? (
+                        className="
+                          bg-[#18120d]
+                          rounded-xl
+                          border
+                          border-[#d4af37]/20
+                          p-3.5
+                          space-y-2.5
+                        "
+
+                      >
+
 
                         <div
 
@@ -1885,55 +2603,145 @@ React.FC<OrderModalProps> = ({
                               text-[#8e8072]
                             "
                           >
-
-                            Ongkir
-
+                            Jarak estimasi
                           </span>
 
 
                           <span
-
                             className="
-                              text-[#d4af37]
-                              font-bold
+                              text-white
+                              font-semibold
                             "
-
                           >
 
-                            {formattedShippingFee}
+                            {distanceKm} km
 
                           </span>
 
-
                         </div>
 
-                      )
 
-                      : (
+                        {
+                          deliveryAvailable
 
-                        <p
+                            ? (
 
-                          className="
-                            text-xs
-                            text-red-400
-                            font-semibold
-                          "
+                              <>
 
-                        >
+                                <div
 
-                          Lokasi di luar jangkauan pengiriman.
+                                  className="
+                                    flex
+                                    justify-between
+                                    gap-3
+                                    text-xs
+                                  "
 
-                        </p>
+                                >
 
-                      )
+                                  <span
+                                    className="
+                                      text-[#8e8072]
+                                    "
+                                  >
+                                    Estimasi ongkir
+                                  </span>
 
+
+                                  <span
+
+                                    className="
+                                      text-[#d4af37]
+                                      font-bold
+                                    "
+
+                                  >
+
+                                    {formattedShippingFee}
+
+                                  </span>
+
+                                </div>
+
+
+                                <p
+                                  className="
+                                    text-[10px]
+                                    text-[#6f6358]
+                                    leading-relaxed
+                                    pt-1
+                                  "
+                                >
+                                  Total final akan diverifikasi kembali oleh server saat pesanan dibuat.
+                                </p>
+
+                              </>
+
+                            )
+
+                            : (
+
+                              <div
+                                className="
+                                  rounded-lg
+                                  bg-red-950/20
+                                  border
+                                  border-red-500/20
+                                  p-2.5
+                                "
+                              >
+
+                                <p
+
+                                  className="
+                                    text-xs
+                                    text-red-400
+                                    font-semibold
+                                  "
+
+                                >
+
+                                  Lokasi berada di luar jangkauan pengiriman.
+
+                                </p>
+
+
+                                <button
+
+                                  type="button"
+
+                                  onClick={
+                                    selectPickup
+                                  }
+
+                                  className="
+                                    text-xs
+                                    text-[#d4af37]
+                                    font-semibold
+                                    mt-2
+                                  "
+
+                                >
+
+                                  Ganti ke Ambil Sendiri
+
+                                </button>
+
+                              </div>
+
+                            )
+                        }
+
+
+                      </div>
+
+                    )
                   }
 
 
                 </div>
 
               )
-
             }
 
 
@@ -1986,9 +2794,7 @@ React.FC<OrderModalProps> = ({
 
               <button
 
-                type="
-                  button
-                "
+                type="button"
 
                 onClick={
                   () =>
@@ -2052,9 +2858,7 @@ React.FC<OrderModalProps> = ({
 
               <button
 
-                type="
-                  button
-                "
+                type="button"
 
                 onClick={
                   () =>
@@ -2169,25 +2973,19 @@ React.FC<OrderModalProps> = ({
               >
 
                 <option
-                  value="
-                    Es Normal
-                  "
+                  value="Es Normal"
                 >
                   Es Normal
                 </option>
 
                 <option
-                  value="
-                    Less Ice
-                  "
+                  value="Less Ice"
                 >
                   Less Ice
                 </option>
 
                 <option
-                  value="
-                    No Ice
-                  "
+                  value="No Ice"
                 >
                   No Ice
                 </option>
@@ -2254,33 +3052,25 @@ React.FC<OrderModalProps> = ({
               >
 
                 <option
-                  value="
-                    Gula Normal
-                  "
+                  value="Gula Normal"
                 >
                   Normal
                 </option>
 
                 <option
-                  value="
-                    Less Sugar
-                  "
+                  value="Less Sugar"
                 >
                   Less Sugar
                 </option>
 
                 <option
-                  value="
-                    Extra Sweet
-                  "
+                  value="Extra Sweet"
                 >
                   Extra Sweet
                 </option>
 
                 <option
-                  value="
-                    No Sugar
-                  "
+                  value="No Sugar"
                 >
                   No Sugar
                 </option>
@@ -2319,13 +3109,9 @@ React.FC<OrderModalProps> = ({
 
             <input
 
-              type="
-                text
-              "
+              type="text"
 
-              placeholder="
-                Contoh: Pisahkan es
-              "
+              placeholder="Contoh: Pisahkan es"
 
               value={
                 notes
@@ -2410,20 +3196,28 @@ React.FC<OrderModalProps> = ({
 
 
               {
-
-                activeShippingFee >
-                0 && (
+                deliveryEnabled && (
 
                   <div>
 
                     Ongkir{' '}
 
-                    {formattedShippingFee}
+                    {
+                      distanceKm ===
+                      null
+
+                        ? 'Belum dihitung'
+
+                        : deliveryAvailable
+
+                          ? formattedShippingFee
+
+                          : 'Di luar jangkauan'
+                    }
 
                   </div>
 
                 )
-
               }
 
 
@@ -2441,7 +3235,11 @@ React.FC<OrderModalProps> = ({
 
             >
 
-              Total Bayar
+              {
+                deliveryEnabled
+                  ? 'Estimasi Total'
+                  : 'Total Bayar'
+              }
 
             </span>
 
@@ -2467,16 +3265,18 @@ React.FC<OrderModalProps> = ({
 
           <button
 
-            type="
-              button
-            "
+            type="button"
 
             onClick={
               handleCheckoutXendit
             }
 
             disabled={
-              loading
+              loading ||
+              (
+                deliveryEnabled &&
+                !deliveryAvailable
+              )
             }
 
             className="
@@ -2498,7 +3298,6 @@ React.FC<OrderModalProps> = ({
 
 
             {
-
               loading
 
                 ? (
@@ -2541,7 +3340,6 @@ React.FC<OrderModalProps> = ({
                   </>
 
                 )
-
             }
 
 
