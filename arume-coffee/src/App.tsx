@@ -95,10 +95,9 @@ export default function App() {
     );
 
 
-  /*
-   * Order yang masih aktif.
-   * Disimpan juga ke localStorage.
-   */
+  /* =========================================================
+     ACTIVE ORDER
+     ========================================================= */
 
   const [
     activeOrderNumber,
@@ -112,10 +111,9 @@ export default function App() {
     );
 
 
-  /*
-   * Mengontrol apakah modal status besar
-   * sedang dibuka.
-   */
+  /* =========================================================
+     SHOW FULL ORDER STATUS
+     ========================================================= */
 
   const [
     showOrderStatus,
@@ -126,6 +124,10 @@ export default function App() {
     );
 
 
+  /* =========================================================
+     PAYMENT CANCELLED
+     ========================================================= */
+
   const [
     paymentCancelledOrder,
     setPaymentCancelledOrder
@@ -134,6 +136,10 @@ export default function App() {
       null
     );
 
+
+  /* =========================================================
+     ADMIN PAGE CHECK
+     ========================================================= */
 
   const isAdminPage =
 
@@ -145,7 +151,7 @@ export default function App() {
 
 
   /* =========================================================
-     ACTIVE ORDER STORAGE
+     SAVE ACTIVE ORDER
      ========================================================= */
 
   const saveActiveOrder =
@@ -158,7 +164,8 @@ export default function App() {
         String(
           orderNumber ||
           ''
-        ).trim();
+        )
+          .trim();
 
 
       if (
@@ -180,6 +187,10 @@ export default function App() {
       );
     };
 
+
+  /* =========================================================
+     REMOVE ACTIVE ORDER
+     ========================================================= */
 
   const removeActiveOrder =
     () => {
@@ -316,12 +327,13 @@ export default function App() {
 
           onLoginSuccess={(
             secret
-          ) =>
+          ) => {
 
             setAdminSecret(
               secret
-            )
-          }
+            );
+
+          }}
 
         />
 
@@ -387,12 +399,13 @@ export default function App() {
 
           onSelectMenu={(
             item
-          ) =>
+          ) => {
 
             setSelectedItem(
               item
-            )
-          }
+            );
+
+          }}
 
         />
 
@@ -411,6 +424,10 @@ export default function App() {
       <Footer />
 
 
+      {/* =====================================================
+          ORDER MODAL
+          ===================================================== */}
+
       <OrderModal
 
         item={
@@ -421,12 +438,13 @@ export default function App() {
           STORE_LOCATION
         }
 
-        onClose={() =>
+        onClose={() => {
 
           setSelectedItem(
             null
-          )
-        }
+          );
+
+        }}
 
       />
 
@@ -444,13 +462,47 @@ export default function App() {
             activeOrderNumber
           }
 
-          onClose={() => {
+          onClose={(
+            finalStatus
+          ) => {
+
+            const normalizedStatus =
+              String(
+                finalStatus ||
+                ''
+              )
+                .trim()
+                .toLowerCase();
+
 
             /*
-             * Jangan hapus activeOrderNumber.
+             * Kalau status sudah selesai,
+             * gagal, atau refund,
+             * hapus order aktif.
+             */
+
+            if (
+              normalizedStatus ===
+                'completed' ||
+
+              normalizedStatus ===
+                'failed' ||
+
+              normalizedStatus ===
+                'refunded'
+            ) {
+
+              removeActiveOrder();
+
+              return;
+            }
+
+
+            /*
+             * pending / paid / ready:
              *
-             * Cuma tutup modal besar.
-             * Mini status tetap muncul.
+             * Hanya tutup halaman besar.
+             * Mini popup tetap muncul.
              */
 
             setShowOrderStatus(
@@ -508,11 +560,15 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() =>
+
+              onClick={() => {
+
                 setShowOrderStatus(
                   true
-                )
-              }
+                );
+
+              }}
+
               className="
                 w-full
                 p-4
@@ -521,6 +577,7 @@ export default function App() {
                 gap-4
                 text-left
                 hover:bg-[#1d150f]
+                active:bg-[#211810]
                 transition
               "
             >
@@ -706,11 +763,15 @@ export default function App() {
 
             <button
               type="button"
-              onClick={() =>
+
+              onClick={() => {
+
                 setPaymentCancelledOrder(
                   null
-                )
-              }
+                );
+
+              }}
+
               className="
                 mt-6
                 w-full
@@ -785,7 +846,6 @@ export default function App() {
 
         >
 
-
           <MessageCircle
             className="
               w-6
@@ -806,11 +866,8 @@ export default function App() {
               pr-1
             "
           >
-
             Pesan Fast-Response
-
           </span>
-
 
         </a>
 
