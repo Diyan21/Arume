@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { MenuSection } from './components/MenuSection';
@@ -12,7 +12,49 @@ import { CONTACT_INFO } from './data/coffeeData';
 import { MessageCircle } from 'lucide-react';
 
 export default function App() {
-  const [selectedItem, setSelectedItem] = useState<CoffeeMenuItem | null>(null);
+  const [selectedItem, setSelectedItem] =
+    useState<CoffeeMenuItem | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    );
+
+    const payment = params.get('payment');
+    const orderNumber = params.get('order');
+
+    if (payment === 'success') {
+      alert(
+        `Pembayaran berhasil!${
+          orderNumber
+            ? `\nOrder: ${orderNumber}`
+            : ''
+        }`
+      );
+
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname
+      );
+    }
+
+    if (payment === 'cancelled') {
+      alert(
+        `Pembayaran dibatalkan.${
+          orderNumber
+            ? `\nOrder: ${orderNumber}`
+            : ''
+        }`
+      );
+
+      window.history.replaceState(
+        {},
+        '',
+        window.location.pathname
+      );
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0a0806] text-[#f3ece2] font-sans selection:bg-[#d4af37] selection:text-black relative">
@@ -25,7 +67,11 @@ export default function App() {
         <HeroSection />
 
         {/* 2. Menu Coffee Section */}
-        <MenuSection onSelectMenu={(item) => setSelectedItem(item)} />
+        <MenuSection
+          onSelectMenu={(item) =>
+            setSelectedItem(item)
+          }
+        />
 
         {/* 3. Why Choose Arume Section */}
         <WhyUsSection />
@@ -55,7 +101,10 @@ export default function App() {
         aria-label="Pesan via WhatsApp"
       >
         <MessageCircle className="w-6 h-6 text-white group-hover:rotate-12 transition-transform" />
-        <span className="hidden sm:inline font-bold text-sm pr-1">Pesan Fast-Response</span>
+
+        <span className="hidden sm:inline font-bold text-sm pr-1">
+          Pesan Fast-Response
+        </span>
       </a>
     </div>
   );
