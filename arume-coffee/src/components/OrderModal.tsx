@@ -1,4 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, {
+  useRef,
+  useState
+} from 'react';
 
 import {
   X,
@@ -6,103 +9,620 @@ import {
   Minus,
   CreditCard,
   Loader2,
+  MapPin,
 } from 'lucide-react';
 
-import { CoffeeMenuItem } from '../types';
+import {
+  CoffeeMenuItem
+} from '../types';
 
 
-interface OrderModalProps {
-  item: CoffeeMenuItem | null;
-  onClose: () => void;
+/* =========================================================
+   STORE LOCATION TYPE
+   ========================================================= */
+
+interface StoreLocation {
+
+  name: string;
+
+  address: string;
+
+  latitude: number;
+
+  longitude: number;
+
+  postalCode: string;
 }
 
 
-export const OrderModal: React.FC<OrderModalProps> = ({
+/* =========================================================
+   PROPS
+   ========================================================= */
+
+interface OrderModalProps {
+
+  item:
+    CoffeeMenuItem | null;
+
+  storeLocation:
+    StoreLocation;
+
+  onClose:
+    () => void;
+}
+
+
+/* =========================================================
+   COMPONENT
+   ========================================================= */
+
+export const OrderModal:
+React.FC<OrderModalProps> = ({
+
   item,
+
+  storeLocation,
+
   onClose,
+
 }) => {
 
-  const [quantity, setQuantity] =
-    useState(1);
 
-  const [iceLevel, setIceLevel] =
-    useState('Es Normal');
+  /* =========================================================
+     ORDER CUSTOMIZATION
+     ========================================================= */
 
-  const [sugarLevel, setSugarLevel] =
-    useState('Gula Normal');
-
-  const [notes, setNotes] =
-    useState('');
-
-
-  // ================================
-  // CUSTOMER DATA
-  // ================================
-
-  const [customerName, setCustomerName] =
-    useState('');
-
-  const [customerEmail, setCustomerEmail] =
-    useState('');
-
-  const [customerPhone, setCustomerPhone] =
-    useState('');
+  const [
+    quantity,
+    setQuantity
+  ] =
+    useState(
+      1
+    );
 
 
-  // ================================
-  // LOADING STATE
-  // ================================
+  const [
+    iceLevel,
+    setIceLevel
+  ] =
+    useState(
+      'Es Normal'
+    );
 
-  const [loading, setLoading] =
-    useState(false);
+
+  const [
+    sugarLevel,
+    setSugarLevel
+  ] =
+    useState(
+      'Gula Normal'
+    );
 
 
-  // ================================
-  // CHECKOUT IDEMPOTENCY
-  // ================================
+  const [
+    notes,
+    setNotes
+  ] =
+    useState(
+      ''
+    );
+
+
+  /* =========================================================
+     CUSTOMER DATA
+     ========================================================= */
+
+  const [
+    customerName,
+    setCustomerName
+  ] =
+    useState(
+      ''
+    );
+
+
+  const [
+    customerEmail,
+    setCustomerEmail
+  ] =
+    useState(
+      ''
+    );
+
+
+  const [
+    customerPhone,
+    setCustomerPhone
+  ] =
+    useState(
+      ''
+    );
+
+
+  /* =========================================================
+     OPTIONAL DELIVERY
+     ========================================================= */
+
+  const [
+    deliveryAddress,
+    setDeliveryAddress
+  ] =
+    useState(
+      ''
+    );
+
+
+  const [
+    customerLatitude,
+    setCustomerLatitude
+  ] =
+    useState<number | null>(
+      null
+    );
+
+
+  const [
+    customerLongitude,
+    setCustomerLongitude
+  ] =
+    useState<number | null>(
+      null
+    );
+
+
+  const [
+    distanceKm,
+    setDistanceKm
+  ] =
+    useState<number | null>(
+      null
+    );
+
+
+  const [
+    shippingFee,
+    setShippingFee
+  ] =
+    useState(
+      0
+    );
+
+
+  const [
+    locationLoading,
+    setLocationLoading
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
+    deliveryAvailable,
+    setDeliveryAvailable
+  ] =
+    useState(
+      true
+    );
+
+
+  /* =========================================================
+     LOADING
+     ========================================================= */
+
+  const [
+    loading,
+    setLoading
+  ] =
+    useState(
+      false
+    );
+
+
+  /* =========================================================
+     CHECKOUT IDEMPOTENCY
+     ========================================================= */
 
   const checkoutIdRef =
-    useRef<string | null>(null);
+    useRef<string | null>(
+      null
+    );
 
 
-  if (!item) {
+  /* =========================================================
+     DISTANCE CALCULATOR
+     HAVERSINE
+     ========================================================= */
+
+  const calculateDistance =
+    (
+      lat1: number,
+      lon1: number,
+      lat2: number,
+      lon2: number
+    ) => {
+
+      const earthRadius =
+        6371;
+
+
+      const toRadians =
+        (
+          degree: number
+        ) =>
+
+          degree *
+          (
+            Math.PI /
+            180
+          );
+
+
+      const latitudeDistance =
+        toRadians(
+          lat2 -
+          lat1
+        );
+
+
+      const longitudeDistance =
+        toRadians(
+          lon2 -
+          lon1
+        );
+
+
+      const a =
+
+        Math.sin(
+          latitudeDistance /
+          2
+        ) *
+
+        Math.sin(
+          latitudeDistance /
+          2
+        ) +
+
+        Math.cos(
+          toRadians(
+            lat1
+          )
+        ) *
+
+        Math.cos(
+          toRadians(
+            lat2
+          )
+        ) *
+
+        Math.sin(
+          longitudeDistance /
+          2
+        ) *
+
+        Math.sin(
+          longitudeDistance /
+          2
+        );
+
+
+      const c =
+
+        2 *
+
+        Math.atan2(
+
+          Math.sqrt(
+            a
+          ),
+
+          Math.sqrt(
+            1 - a
+          )
+
+        );
+
+
+      return (
+        earthRadius *
+        c
+      );
+    };
+
+
+  /* =========================================================
+     SHIPPING FEE
+     ========================================================= */
+
+  const calculateShippingFee =
+    (
+      distance: number
+    ) => {
+
+      if (
+        distance <=
+        2
+      ) {
+
+        return 5000;
+      }
+
+
+      if (
+        distance <=
+        5
+      ) {
+
+        return 10000;
+      }
+
+
+      if (
+        distance <=
+        8
+      ) {
+
+        return 15000;
+      }
+
+
+      if (
+        distance <=
+        12
+      ) {
+
+        return 20000;
+      }
+
+
+      return null;
+    };
+
+
+  /* =========================================================
+     GET CUSTOMER LOCATION
+     ========================================================= */
+
+  const handleGetLocation =
+    () => {
+
+      if (
+        !navigator.geolocation
+      ) {
+
+        alert(
+          'Browser Anda tidak mendukung fitur lokasi.'
+        );
+
+        return;
+      }
+
+
+      setLocationLoading(
+        true
+      );
+
+
+      navigator.geolocation
+        .getCurrentPosition(
+
+          (
+            position
+          ) => {
+
+            const latitude =
+              position
+                .coords
+                .latitude;
+
+
+            const longitude =
+              position
+                .coords
+                .longitude;
+
+
+            setCustomerLatitude(
+              latitude
+            );
+
+
+            setCustomerLongitude(
+              longitude
+            );
+
+
+            const distance =
+              calculateDistance(
+
+                storeLocation
+                  .latitude,
+
+                storeLocation
+                  .longitude,
+
+                latitude,
+
+                longitude
+
+              );
+
+
+            const roundedDistance =
+
+              Math.round(
+                distance *
+                10
+              ) /
+              10;
+
+
+            setDistanceKm(
+              roundedDistance
+            );
+
+
+            const fee =
+              calculateShippingFee(
+                distance
+              );
+
+
+            if (
+              fee ===
+              null
+            ) {
+
+              setShippingFee(
+                0
+              );
+
+
+              setDeliveryAvailable(
+                false
+              );
+
+            } else {
+
+              setShippingFee(
+                fee
+              );
+
+
+              setDeliveryAvailable(
+                true
+              );
+
+            }
+
+
+            setLocationLoading(
+              false
+            );
+
+          },
+
+
+          (
+            error
+          ) => {
+
+            console.error(
+              'Location error:',
+              error
+            );
+
+
+            setLocationLoading(
+              false
+            );
+
+
+            alert(
+              'Lokasi tidak dapat diakses. Pastikan izin lokasi browser sudah aktif.'
+            );
+
+          },
+
+
+          {
+
+            enableHighAccuracy:
+              true,
+
+            timeout:
+              10000,
+
+            maximumAge:
+              30000,
+
+          }
+
+        );
+    };
+
+
+  /* =========================================================
+     ITEM NULL
+     ========================================================= */
+
+  if (
+    !item
+  ) {
+
     return null;
   }
 
 
-  // ================================
-  // FRONTEND PRICE
-  // ================================
-  //
-  // Harga ini hanya untuk tampilan.
-  //
-  // Harga pembayaran sebenarnya
-  // diambil backend dari Supabase
-  // berdasarkan product_id.
-  // ================================
+  /* =========================================================
+     PRICE
+     ========================================================= */
+
+  const subtotal =
+
+    item.price *
+    quantity;
+
+
+  /*
+   * Ongkir hanya ditambahkan
+   * jika lokasi customer sudah dicek
+   * dan masih dalam jangkauan.
+   */
+
+  const activeShippingFee =
+
+    distanceKm !== null &&
+    deliveryAvailable
+
+      ? shippingFee
+
+      : 0;
+
 
   const totalPrice =
-    item.price * quantity;
+
+    subtotal +
+    activeShippingFee;
+
+
+  const formattedSubtotal =
+
+    `Rp${subtotal.toLocaleString(
+      'id-ID'
+    )}`;
+
+
+  const formattedShippingFee =
+
+    `Rp${activeShippingFee.toLocaleString(
+      'id-ID'
+    )}`;
 
 
   const formattedTotalPrice =
+
     `Rp${totalPrice.toLocaleString(
       'id-ID'
     )}`;
 
 
-  // ================================
-  // HANDLER CHECKOUT XENDIT
-  // ================================
+  /* =========================================================
+     CHECKOUT XENDIT
+     ========================================================= */
 
   const handleCheckoutXendit =
     async () => {
 
-      // ================================
-      // VALIDASI CUSTOMER
-      // ================================
 
-      if (!customerName.trim()) {
+      /* =====================================================
+         VALIDATE CUSTOMER NAME
+         ===================================================== */
+
+      if (
+        !customerName.trim()
+      ) {
 
         alert(
           'Mohon isi nama Anda terlebih dahulu.'
@@ -112,20 +632,51 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       }
 
 
-      // ================================
-      // ANTI DOUBLE CLICK
-      // ================================
+      /* =====================================================
+         OPTIONAL DELIVERY VALIDATION
+         ===================================================== */
 
-      if (loading) {
+      /*
+       * Delivery tidak wajib.
+       *
+       * Tapi kalau customer sudah
+       * meminta cek lokasi dan ternyata
+       * di luar jangkauan, jangan gunakan
+       * delivery tersebut.
+       */
+
+      if (
+        distanceKm !== null &&
+        !deliveryAvailable
+      ) {
+
+        alert(
+          'Lokasi pengiriman berada di luar jangkauan. Silakan checkout tanpa pengiriman atau hubungi Arume Coffee.'
+        );
+
         return;
       }
 
 
-      // ================================
-      // GENERATE CHECKOUT ID
-      // ================================
+      /* =====================================================
+         ANTI DOUBLE CLICK
+         ===================================================== */
 
-      if (!checkoutIdRef.current) {
+      if (
+        loading
+      ) {
+
+        return;
+      }
+
+
+      /* =====================================================
+         GENERATE CHECKOUT ID
+         ===================================================== */
+
+      if (
+        !checkoutIdRef.current
+      ) {
 
         checkoutIdRef.current =
           crypto.randomUUID();
@@ -136,30 +687,42 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         checkoutIdRef.current;
 
 
-      setLoading(true);
+      setLoading(
+        true
+      );
 
 
       try {
 
-        // ==========================================
-        // STEP 1
-        // CREATE ORDER
-        // ==========================================
+
+        /* ===================================================
+           STEP 1
+           CREATE ORDER
+           =================================================== */
 
         const orderResponse =
+
           await fetch(
+
             'https://arume-coffee-api-2.diyanaxl.workers.dev/api/orders',
+
             {
+
               method:
                 'POST',
 
+
               headers: {
+
                 'Content-Type':
                   'application/json',
+
               },
+
 
               body:
                 JSON.stringify({
+
 
                   checkout_id:
                     checkoutId,
@@ -168,90 +731,146 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   customer: {
 
                     name:
-                      customerName.trim(),
+                      customerName
+                        .trim(),
 
-
-                    // Email optional
 
                     email:
-                      customerEmail.trim() ||
+                      customerEmail
+                        .trim() ||
                       null,
 
-
-                    // WhatsApp optional
-                    // Tidak menggunakan nomor dummy
 
                     phone:
-                      customerPhone.trim() ||
+                      customerPhone
+                        .trim() ||
                       null,
+
                   },
 
 
-                  // ==================================
-                  // FRONTEND TIDAK MENGIRIM HARGA
-                  //
-                  // Backend mengambil harga langsung
-                  // dari Supabase.
-                  // ==================================
+                  /* =========================================
+                     OPTIONAL DELIVERY
+                     ========================================= */
+
+                  delivery:
+
+                    customerLatitude !== null &&
+                    customerLongitude !== null &&
+                    deliveryAvailable
+
+                      ? {
+
+                          address:
+
+                            deliveryAddress
+                              .trim() ||
+                            null,
+
+
+                          latitude:
+                            customerLatitude,
+
+
+                          longitude:
+                            customerLongitude,
+
+
+                          distance_km:
+                            distanceKm,
+
+
+                          /*
+                           * HANYA INFORMASI FRONTEND.
+                           *
+                           * Backend nantinya harus
+                           * menghitung ulang sendiri.
+                           */
+
+                          shipping_fee:
+                            activeShippingFee,
+
+                        }
+
+                      : null,
+
+
+                  /* =========================================
+                     ITEMS
+                     ========================================= */
 
                   items: [
+
                     {
+
                       product_id:
                         item.id,
 
+
                       quantity:
                         quantity,
+
                     },
+
                   ],
 
 
+                  /* =========================================
+                     NOTES
+                     ========================================= */
+
                   notes:
+
                     `${iceLevel}, ${sugarLevel}${
                       notes.trim()
+
                         ? ` - ${notes.trim()}`
+
                         : ''
                     }`,
+
                 }),
+
             }
+
           );
 
 
-        // ==========================================
-        // PARSE ORDER RESPONSE
-        // ==========================================
+        /* ===================================================
+           PARSE ORDER RESPONSE
+           =================================================== */
 
-        let orderResult: any;
+        let orderResult:
+          any;
 
 
         try {
 
           orderResult =
-            await orderResponse.json();
+            await orderResponse
+              .json();
 
         } catch {
 
           throw new Error(
             'Response dari server order tidak valid.'
           );
+
         }
 
 
         console.log(
+
           'Create order response:',
+
           orderResult
+
         );
 
 
-        // ==========================================
-        // AMBIL ORDER NUMBER
-        //
-        // Mendukung:
-        //
-        // - Order baru
-        // - Existing checkout
-        // - Existing order
-        // - Variasi struktur response backend
-        // ==========================================
+        /* ===================================================
+           ORDER NUMBER
+           =================================================== */
 
         const orderNumber =
 
@@ -286,51 +905,71 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             ?.order_number;
 
 
-        // ==========================================
-        // VALIDASI ORDER
-        // ==========================================
+        /* ===================================================
+           VALIDATE ORDER
+           =================================================== */
 
-        if (!orderNumber) {
+        if (
+          !orderNumber
+        ) {
 
           console.error(
+
             'Order number tidak ditemukan:',
+
             orderResult
+
           );
 
 
           throw new Error(
 
-            orderResult?.message ||
+            orderResult
+              ?.message ||
 
-            orderResult?.error ||
+            orderResult
+              ?.error ||
 
             'Gagal membuat pesanan.'
+
           );
+
         }
 
 
         console.log(
+
           'Order siap digunakan:',
+
           orderNumber
+
         );
 
 
-        // ==========================================
-        // STEP 2
-        // CREATE / REUSE XENDIT PAYMENT SESSION
-        // ==========================================
+        /* ===================================================
+           STEP 2
+           CREATE / REUSE XENDIT PAYMENT
+           =================================================== */
 
         const paymentResponse =
+
           await fetch(
+
             'https://arume-coffee-api-2.diyanaxl.workers.dev/api/payment/create',
+
             {
+
               method:
                 'POST',
 
+
               headers: {
+
                 'Content-Type':
                   'application/json',
+
               },
+
 
               body:
                 JSON.stringify({
@@ -339,42 +978,47 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                     orderNumber,
 
                 }),
+
             }
+
           );
 
 
-        // ==========================================
-        // PARSE PAYMENT RESPONSE
-        // ==========================================
+        /* ===================================================
+           PARSE PAYMENT RESPONSE
+           =================================================== */
 
-        let paymentResult: any;
+        let paymentResult:
+          any;
 
 
         try {
 
           paymentResult =
-            await paymentResponse.json();
+            await paymentResponse
+              .json();
 
         } catch {
 
           throw new Error(
             'Response dari server pembayaran tidak valid.'
           );
+
         }
 
 
         console.log(
+
           'Create Xendit payment response:',
+
           paymentResult
+
         );
 
 
-        // ==========================================
-        // AMBIL PAYMENT URL
-        //
-        // Mendukung beberapa bentuk
-        // response backend.
-        // ==========================================
+        /* ===================================================
+           PAYMENT URL
+           =================================================== */
 
         const paymentUrl =
 
@@ -409,92 +1053,109 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             ?.payment_url;
 
 
-        // ==========================================
-        // VALIDASI PAYMENT URL
-        // ==========================================
+        /* ===================================================
+           VALIDATE PAYMENT URL
+           =================================================== */
 
-        if (!paymentUrl) {
+        if (
+          !paymentUrl
+        ) {
 
           console.error(
+
             'Payment URL tidak ditemukan:',
+
             paymentResult
+
           );
 
 
           throw new Error(
 
-            paymentResult?.message ||
+            paymentResult
+              ?.message ||
 
-            paymentResult?.error ||
+            paymentResult
+              ?.error ||
 
             'Gagal membuat pembayaran Xendit.'
+
           );
+
         }
 
 
         console.log(
+
           'Redirect ke Xendit:',
+
           paymentUrl
+
         );
 
 
-        // ==========================================
-        // RESET CHECKOUT ID
-        //
-        // Reset hanya setelah payment URL
-        // benar-benar berhasil didapat.
-        // ==========================================
+        /* ===================================================
+           RESET CHECKOUT ID
+           =================================================== */
 
         checkoutIdRef.current =
           null;
 
 
-        // ==========================================
-        // REDIRECT KE XENDIT
-        // ==========================================
+        /* ===================================================
+           REDIRECT
+           =================================================== */
 
         window.location.href =
           paymentUrl;
 
-      } catch (error: any) {
+
+      } catch (
+        error: any
+      ) {
+
 
         console.error(
+
           'Checkout Xendit error:',
+
           error
+
         );
 
 
         alert(
+
           'Gagal melanjutkan pembayaran: ' +
-            (
-              error?.message ||
-              'Terjadi kesalahan pada server.'
-            )
+
+          (
+            error?.message ||
+            'Terjadi kesalahan pada server.'
+          )
+
         );
 
 
-        // ==========================================
-        // PENTING
-        //
-        // checkoutIdRef TIDAK di-reset saat error.
-        //
-        // Kalau request sebenarnya sudah berhasil
-        // sampai backend tetapi internet customer
-        // terputus, retry menggunakan checkout_id
-        // yang sama sehingga order tidak dobel.
-        // ==========================================
-
       } finally {
 
-        setLoading(false);
+
+        setLoading(
+          false
+        );
 
       }
+
     };
 
+
+  /* =========================================================
+     UI
+     ========================================================= */
 
   return (
 
     <div
+
       className="
         fixed
         inset-0
@@ -509,9 +1170,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         fade-in
         duration-300
       "
+
     >
 
+
       <div
+
         className="
           glass-card
           max-w-lg
@@ -526,15 +1190,22 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           zoom-in-95
           duration-300
         "
+
       >
 
-        {/* ================================
-            CLOSE BUTTON
-        ================================= */}
+
+        {/* CLOSE */}
 
         <button
-          onClick={onClose}
-          disabled={loading}
+
+          onClick={
+            onClose
+          }
+
+          disabled={
+            loading
+          }
+
           className="
             absolute
             top-4
@@ -554,41 +1225,59 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             hover:text-black
             transition-colors
             disabled:opacity-40
-            disabled:cursor-not-allowed
           "
+
         >
 
-          <X className="w-5 h-5" />
+          <X
+            className="
+              w-5
+              h-5
+            "
+          />
 
         </button>
 
 
-        {/* ================================
-            HEADER IMAGE
-        ================================= */}
+        {/* HEADER */}
 
         <div
+
           className="
             relative
             h-48
             sm:h-56
             overflow-hidden
           "
+
         >
 
+
           <img
-            src={item.image}
-            alt={item.name}
+
+            src={
+              item.image
+            }
+
+            alt={
+              item.name
+            }
+
             className="
               w-full
               h-full
               object-cover
             "
-            referrerPolicy="no-referrer"
+
+            referrerPolicy="
+              no-referrer
+            "
+
           />
 
 
           <div
+
             className="
               absolute
               inset-0
@@ -597,10 +1286,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               via-[#120e0b]/40
               to-transparent
             "
+
           />
 
 
           <div
+
             className="
               absolute
               bottom-4
@@ -611,11 +1302,15 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               justify-between
               gap-4
             "
+
           >
+
 
             <div>
 
+
               <span
+
                 className="
                   text-xs
                   px-2.5
@@ -629,97 +1324,126 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   mb-1
                   inline-block
                 "
+
               >
+
                 {item.category}
+
               </span>
 
 
               <h3
+
                 className="
                   font-display
                   text-2xl
                   font-bold
                   text-white
                 "
+
               >
+
                 {item.name}
+
               </h3>
+
 
             </div>
 
 
-            <div className="text-right">
+            <div
+              className="
+                text-right
+              "
+            >
+
 
               <span
+
                 className="
                   text-xs
                   text-[#a09080]
                   block
                 "
+
               >
+
                 Harga Satuan
+
               </span>
 
 
               <span
+
                 className="
                   font-display
                   text-2xl
                   font-bold
                   gold-gradient-text
                 "
+
               >
+
                 {item.formattedPrice}
+
               </span>
+
 
             </div>
 
+
           </div>
+
 
         </div>
 
 
-        {/* ================================
-            MODAL BODY
-        ================================= */}
+        {/* BODY */}
 
         <div
+
           className="
             p-6
             space-y-5
             max-h-[60vh]
             overflow-y-auto
           "
+
         >
 
-          {/* DESCRIPTION */}
 
           <p
+
             className="
               text-sm
               text-[#c2b4a3]
               font-light
               leading-relaxed
             "
+
           >
+
             {item.description}
+
           </p>
 
 
-          {/* ================================
-              CUSTOMER FORM
-          ================================= */}
+          {/* CUSTOMER */}
 
           <div
+
             className="
               space-y-3
               pt-2
               border-t
               border-[#2a2018]
             "
+
           >
 
+
             <span
+
               className="
                 text-xs
                 font-bold
@@ -728,32 +1452,54 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 tracking-wider
                 block
               "
+
             >
+
               Informasi Pemesan
+
             </span>
 
 
             <div
+
               className="
                 grid
                 grid-cols-1
                 sm:grid-cols-2
                 gap-3
               "
+
             >
 
-              {/* NAME */}
 
               <input
-                type="text"
-                placeholder="Nama Lengkap *"
-                value={customerName}
-                onChange={(e) =>
-                  setCustomerName(
-                    e.target.value
-                  )
+
+                type="
+                  text
+                "
+
+                placeholder="
+                  Nama Lengkap *
+                "
+
+                value={
+                  customerName
                 }
-                disabled={loading}
+
+                onChange={
+                  (
+                    e
+                  ) =>
+
+                    setCustomerName(
+                      e.target.value
+                    )
+                }
+
+                disabled={
+                  loading
+                }
+
                 className="
                   w-full
                   bg-[#18120d]
@@ -769,22 +1515,38 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   focus:border-[#d4af37]
                   disabled:opacity-50
                 "
-                required
+
               />
 
 
-              {/* EMAIL OPTIONAL */}
-
               <input
-                type="email"
-                placeholder="Email (Opsional)"
-                value={customerEmail}
-                onChange={(e) =>
-                  setCustomerEmail(
-                    e.target.value
-                  )
+
+                type="
+                  email
+                "
+
+                placeholder="
+                  Email (Opsional)
+                "
+
+                value={
+                  customerEmail
                 }
-                disabled={loading}
+
+                onChange={
+                  (
+                    e
+                  ) =>
+
+                    setCustomerEmail(
+                      e.target.value
+                    )
+                }
+
+                disabled={
+                  loading
+                }
+
                 className="
                   w-full
                   bg-[#18120d]
@@ -800,23 +1562,41 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   focus:border-[#d4af37]
                   disabled:opacity-50
                 "
+
               />
+
 
             </div>
 
 
-            {/* PHONE OPTIONAL */}
-
             <input
-              type="tel"
-              placeholder="Nomor WhatsApp (Opsional)"
-              value={customerPhone}
-              onChange={(e) =>
-                setCustomerPhone(
-                  e.target.value
-                )
+
+              type="
+                tel
+              "
+
+              placeholder="
+                Nomor WhatsApp (Opsional)
+              "
+
+              value={
+                customerPhone
               }
-              disabled={loading}
+
+              onChange={
+                (
+                  e
+                ) =>
+
+                  setCustomerPhone(
+                    e.target.value
+                  )
+              }
+
+              disabled={
+                loading
+              }
+
               className="
                 w-full
                 bg-[#18120d]
@@ -832,16 +1612,338 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 focus:border-[#d4af37]
                 disabled:opacity-50
               "
+
             />
+
 
           </div>
 
 
-          {/* ================================
-              QUANTITY
-          ================================= */}
+          {/* OPTIONAL DELIVERY */}
 
           <div
+
+            className="
+              space-y-3
+              pt-3
+              border-t
+              border-[#2a2018]
+            "
+
+          >
+
+
+            <div
+
+              className="
+                flex
+                items-center
+                justify-between
+                gap-3
+              "
+
+            >
+
+
+              <span
+
+                className="
+                  text-xs
+                  font-bold
+                  text-[#d4af37]
+                  uppercase
+                  tracking-wider
+                "
+
+              >
+
+                Pengiriman
+
+              </span>
+
+
+              <span
+
+                className="
+                  text-[10px]
+                  text-[#8e8072]
+                  uppercase
+                "
+
+              >
+
+                Opsional
+
+              </span>
+
+
+            </div>
+
+
+            <textarea
+
+              placeholder="
+                Alamat pengiriman (Opsional)
+              "
+
+              value={
+                deliveryAddress
+              }
+
+              onChange={
+                (
+                  e
+                ) =>
+
+                  setDeliveryAddress(
+                    e.target.value
+                  )
+              }
+
+              disabled={
+                loading
+              }
+
+              rows={
+                2
+              }
+
+              className="
+                w-full
+                bg-[#18120d]
+                border
+                border-[#d4af37]/30
+                rounded-xl
+                px-3.5
+                py-2.5
+                text-sm
+                text-white
+                placeholder-[#605448]
+                focus:outline-none
+                focus:border-[#d4af37]
+                resize-none
+                disabled:opacity-50
+              "
+
+            />
+
+
+            <button
+
+              type="
+                button
+              "
+
+              onClick={
+                handleGetLocation
+              }
+
+              disabled={
+                loading ||
+                locationLoading
+              }
+
+              className="
+                w-full
+                py-2.5
+                rounded-xl
+                border
+                border-[#d4af37]/40
+                bg-[#251c14]
+                text-[#d4af37]
+                text-sm
+                font-semibold
+                flex
+                items-center
+                justify-center
+                gap-2
+                hover:border-[#d4af37]
+                transition-colors
+                disabled:opacity-50
+              "
+
+            >
+
+
+              {
+                locationLoading
+
+                  ? (
+
+                    <>
+
+                      <Loader2
+                        className="
+                          w-4
+                          h-4
+                          animate-spin
+                        "
+                      />
+
+                      Mengecek lokasi...
+
+                    </>
+
+                  )
+
+                  : (
+
+                    <>
+
+                      <MapPin
+                        className="
+                          w-4
+                          h-4
+                        "
+                      />
+
+                      Gunakan Lokasi Saya
+
+                    </>
+
+                  )
+              }
+
+
+            </button>
+
+
+            {
+
+              distanceKm !== null && (
+
+                <div
+
+                  className="
+                    bg-[#18120d]
+                    rounded-xl
+                    border
+                    border-[#d4af37]/20
+                    p-3
+                    space-y-2
+                  "
+
+                >
+
+
+                  <div
+
+                    className="
+                      flex
+                      justify-between
+                      gap-3
+                      text-xs
+                    "
+
+                  >
+
+                    <span
+                      className="
+                        text-[#8e8072]
+                      "
+                    >
+
+                      Jarak
+
+                    </span>
+
+
+                    <span
+                      className="
+                        text-white
+                        font-semibold
+                      "
+                    >
+
+                      {distanceKm} km
+
+                    </span>
+
+
+                  </div>
+
+
+                  {
+
+                    deliveryAvailable
+
+                      ? (
+
+                        <div
+
+                          className="
+                            flex
+                            justify-between
+                            gap-3
+                            text-xs
+                          "
+
+                        >
+
+                          <span
+                            className="
+                              text-[#8e8072]
+                            "
+                          >
+
+                            Ongkir
+
+                          </span>
+
+
+                          <span
+
+                            className="
+                              text-[#d4af37]
+                              font-bold
+                            "
+
+                          >
+
+                            {formattedShippingFee}
+
+                          </span>
+
+
+                        </div>
+
+                      )
+
+                      : (
+
+                        <p
+
+                          className="
+                            text-xs
+                            text-red-400
+                            font-semibold
+                          "
+
+                        >
+
+                          Lokasi di luar jangkauan pengiriman.
+
+                        </p>
+
+                      )
+
+                  }
+
+
+                </div>
+
+              )
+
+            }
+
+
+          </div>
+
+
+          {/* QUANTITY */}
+
+          <div
+
             className="
               flex
               items-center
@@ -852,38 +1954,60 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               border
               border-[#d4af37]/20
             "
+
           >
 
+
             <span
+
               className="
                 text-sm
                 font-semibold
                 text-white
               "
+
             >
+
               Jumlah Pesanan
+
             </span>
 
 
             <div
+
               className="
                 flex
                 items-center
                 gap-3
               "
+
             >
 
+
               <button
-                type="button"
-                onClick={() =>
-                  setQuantity(
-                    Math.max(
-                      1,
-                      quantity - 1
+
+                type="
+                  button
+                "
+
+                onClick={
+                  () =>
+
+                    setQuantity(
+
+                      Math.max(
+                        1,
+                        quantity -
+                        1
+                      )
+
                     )
-                  )
                 }
-                disabled={loading}
+
+                disabled={
+                  loading
+                }
+
                 className="
                   w-8
                   h-8
@@ -895,17 +2019,22 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   flex
                   items-center
                   justify-center
-                  hover:border-[#d4af37]
-                  disabled:opacity-40
                 "
+
               >
 
-                <Minus className="w-4 h-4" />
+                <Minus
+                  className="
+                    w-4
+                    h-4
+                  "
+                />
 
               </button>
 
 
               <span
+
                 className="
                   font-bold
                   text-lg
@@ -913,19 +2042,33 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   min-w-[20px]
                   text-center
                 "
+
               >
+
                 {quantity}
+
               </span>
 
 
               <button
-                type="button"
-                onClick={() =>
-                  setQuantity(
-                    quantity + 1
-                  )
+
+                type="
+                  button
+                "
+
+                onClick={
+                  () =>
+
+                    setQuantity(
+                      quantity +
+                      1
+                    )
                 }
-                disabled={loading}
+
+                disabled={
+                  loading
+                }
+
                 className="
                   w-8
                   h-8
@@ -937,37 +2080,44 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   flex
                   items-center
                   justify-center
-                  hover:border-[#d4af37]
-                  disabled:opacity-40
                 "
+
               >
 
-                <Plus className="w-4 h-4" />
+                <Plus
+                  className="
+                    w-4
+                    h-4
+                  "
+                />
 
               </button>
 
+
             </div>
+
 
           </div>
 
 
-          {/* ================================
-              ICE & SUGAR
-          ================================= */}
+          {/* ICE + SUGAR */}
 
           <div
+
             className="
               grid
               grid-cols-2
               gap-3
             "
+
           >
 
-            {/* ICE */}
 
             <div>
 
+
               <label
+
                 className="
                   block
                   text-xs
@@ -976,19 +2126,34 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   uppercase
                   mb-1.5
                 "
+
               >
+
                 Level Es
+
               </label>
 
 
               <select
-                value={iceLevel}
-                onChange={(e) =>
-                  setIceLevel(
-                    e.target.value
-                  )
+
+                value={
+                  iceLevel
                 }
-                disabled={loading}
+
+                onChange={
+                  (
+                    e
+                  ) =>
+
+                    setIceLevel(
+                      e.target.value
+                    )
+                }
+
+                disabled={
+                  loading
+                }
+
                 className="
                   w-full
                   bg-[#18120d]
@@ -999,34 +2164,45 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   py-2
                   text-sm
                   text-white
-                  focus:outline-none
-                  focus:border-[#d4af37]
-                  disabled:opacity-50
                 "
+
               >
 
-                <option value="Es Normal">
+                <option
+                  value="
+                    Es Normal
+                  "
+                >
                   Es Normal
                 </option>
 
-                <option value="Less Ice">
+                <option
+                  value="
+                    Less Ice
+                  "
+                >
                   Less Ice
                 </option>
 
-                <option value="No Ice">
+                <option
+                  value="
+                    No Ice
+                  "
+                >
                   No Ice
                 </option>
 
               </select>
 
+
             </div>
 
 
-            {/* SUGAR */}
-
             <div>
 
+
               <label
+
                 className="
                   block
                   text-xs
@@ -1035,19 +2211,34 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   uppercase
                   mb-1.5
                 "
+
               >
+
                 Level Gula
+
               </label>
 
 
               <select
-                value={sugarLevel}
-                onChange={(e) =>
-                  setSugarLevel(
-                    e.target.value
-                  )
+
+                value={
+                  sugarLevel
                 }
-                disabled={loading}
+
+                onChange={
+                  (
+                    e
+                  ) =>
+
+                    setSugarLevel(
+                      e.target.value
+                    )
+                }
+
+                disabled={
+                  loading
+                }
+
                 className="
                   w-full
                   bg-[#18120d]
@@ -1058,42 +2249,58 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   py-2
                   text-sm
                   text-white
-                  focus:outline-none
-                  focus:border-[#d4af37]
-                  disabled:opacity-50
                 "
+
               >
 
-                <option value="Gula Normal">
+                <option
+                  value="
+                    Gula Normal
+                  "
+                >
                   Normal
                 </option>
 
-                <option value="Less Sugar">
+                <option
+                  value="
+                    Less Sugar
+                  "
+                >
                   Less Sugar
                 </option>
 
-                <option value="Extra Sweet">
+                <option
+                  value="
+                    Extra Sweet
+                  "
+                >
                   Extra Sweet
                 </option>
 
-                <option value="No Sugar">
+                <option
+                  value="
+                    No Sugar
+                  "
+                >
                   No Sugar
                 </option>
 
               </select>
 
+
             </div>
+
 
           </div>
 
 
-          {/* ================================
-              NOTES
-          ================================= */}
+          {/* NOTES */}
 
           <div>
 
+
             <label
+
               className="
                 block
                 text-xs
@@ -1102,21 +2309,42 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 uppercase
                 mb-1.5
               "
+
             >
+
               Catatan Pesanan
+
             </label>
 
 
             <input
-              type="text"
-              placeholder="Contoh: Pisahkan es / minta sedotan ramah lingkungan"
-              value={notes}
-              onChange={(e) =>
-                setNotes(
-                  e.target.value
-                )
+
+              type="
+                text
+              "
+
+              placeholder="
+                Contoh: Pisahkan es
+              "
+
+              value={
+                notes
               }
-              disabled={loading}
+
+              onChange={
+                (
+                  e
+                ) =>
+
+                  setNotes(
+                    e.target.value
+                  )
+              }
+
+              disabled={
+                loading
+              }
+
               className="
                 w-full
                 bg-[#18120d]
@@ -1128,22 +2356,21 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 text-sm
                 text-white
                 placeholder-[#605448]
-                focus:outline-none
-                focus:border-[#d4af37]
-                disabled:opacity-50
               "
+
             />
 
+
           </div>
+
 
         </div>
 
 
-        {/* ================================
-            MODAL FOOTER
-        ================================= */}
+        {/* FOOTER */}
 
         <div
+
           className="
             p-6
             border-t
@@ -1154,48 +2381,104 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             justify-between
             gap-4
           "
+
         >
 
-          {/* TOTAL */}
 
           <div>
 
+
+            <div
+
+              className="
+                text-[11px]
+                text-[#8e8072]
+                space-y-0.5
+                mb-1
+              "
+
+            >
+
+
+              <div>
+
+                Produk{' '}
+
+                {formattedSubtotal}
+
+              </div>
+
+
+              {
+
+                activeShippingFee >
+                0 && (
+
+                  <div>
+
+                    Ongkir{' '}
+
+                    {formattedShippingFee}
+
+                  </div>
+
+                )
+
+              }
+
+
+            </div>
+
+
             <span
+
               className="
                 text-[11px]
                 text-[#8e8072]
                 uppercase
                 block
               "
+
             >
+
               Total Bayar
+
             </span>
 
 
             <span
+
               className="
                 font-display
                 text-2xl
                 font-bold
                 gold-gradient-text
               "
+
             >
+
               {formattedTotalPrice}
+
             </span>
+
 
           </div>
 
 
-          {/* ================================
-              PAY BUTTON
-          ================================= */}
-
           <button
-            type="button"
+
+            type="
+              button
+            "
+
             onClick={
               handleCheckoutXendit
             }
-            disabled={loading}
+
+            disabled={
+              loading
+            }
+
             className="
               gold-gradient-btn
               px-6
@@ -1210,53 +2493,69 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               disabled:opacity-50
               disabled:cursor-not-allowed
             "
+
           >
 
-            {loading ? (
 
-              <>
+            {
 
-                <Loader2
-                  className="
-                    w-4
-                    h-4
-                    text-black
-                    animate-spin
-                  "
-                />
+              loading
 
-                <span>
-                  Memproses...
-                </span>
+                ? (
 
-              </>
+                  <>
 
-            ) : (
+                    <Loader2
+                      className="
+                        w-4
+                        h-4
+                        text-black
+                        animate-spin
+                      "
+                    />
 
-              <>
+                    <span>
+                      Memproses...
+                    </span>
 
-                <CreditCard
-                  className="
-                    w-4
-                    h-4
-                    text-black
-                  "
-                />
+                  </>
 
-                <span>
-                  Bayar Sekarang
-                </span>
+                )
 
-              </>
+                : (
 
-            )}
+                  <>
+
+                    <CreditCard
+                      className="
+                        w-4
+                        h-4
+                        text-black
+                      "
+                    />
+
+                    <span>
+                      Bayar Sekarang
+                    </span>
+
+                  </>
+
+                )
+
+            }
+
 
           </button>
 
+
         </div>
+
 
       </div>
 
+
     </div>
+
   );
+
 };
