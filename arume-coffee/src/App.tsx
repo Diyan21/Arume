@@ -30,7 +30,9 @@ import {
 } from './data/coffeeData';
 
 import {
-  MessageCircle
+  Coffee,
+  MessageCircle,
+  ReceiptText
 } from 'lucide-react';
 
 
@@ -56,6 +58,14 @@ const STORE_LOCATION = {
     '11730',
 
 };
+
+
+/* =========================================================
+   LOCAL STORAGE KEY
+   ========================================================= */
+
+const ACTIVE_ORDER_STORAGE_KEY =
+  'arume_active_order';
 
 
 /* =========================================================
@@ -85,12 +95,34 @@ export default function App() {
     );
 
 
+  /*
+   * Order yang masih aktif.
+   * Disimpan juga ke localStorage.
+   */
+
   const [
-    paymentOrderNumber,
-    setPaymentOrderNumber
+    activeOrderNumber,
+    setActiveOrderNumber
   ] =
     useState<string | null>(
-      null
+      () =>
+        localStorage.getItem(
+          ACTIVE_ORDER_STORAGE_KEY
+        )
+    );
+
+
+  /*
+   * Mengontrol apakah modal status besar
+   * sedang dibuka.
+   */
+
+  const [
+    showOrderStatus,
+    setShowOrderStatus
+  ] =
+    useState(
+      false
     );
 
 
@@ -110,6 +142,62 @@ export default function App() {
 
     window.location.pathname ===
       '/admin/';
+
+
+  /* =========================================================
+     ACTIVE ORDER STORAGE
+     ========================================================= */
+
+  const saveActiveOrder =
+    (
+      orderNumber:
+        string
+    ) => {
+
+      const normalized =
+        String(
+          orderNumber ||
+          ''
+        ).trim();
+
+
+      if (
+        !normalized
+      ) {
+
+        return;
+      }
+
+
+      localStorage.setItem(
+        ACTIVE_ORDER_STORAGE_KEY,
+        normalized
+      );
+
+
+      setActiveOrderNumber(
+        normalized
+      );
+    };
+
+
+  const removeActiveOrder =
+    () => {
+
+      localStorage.removeItem(
+        ACTIVE_ORDER_STORAGE_KEY
+      );
+
+
+      setActiveOrderNumber(
+        null
+      );
+
+
+      setShowOrderStatus(
+        false
+      );
+    };
 
 
   /* =========================================================
@@ -155,8 +243,13 @@ export default function App() {
         orderNumber
       ) {
 
-        setPaymentOrderNumber(
+        saveActiveOrder(
           orderNumber
+        );
+
+
+        setShowOrderStatus(
+          true
         );
 
 
@@ -188,11 +281,6 @@ export default function App() {
         setPaymentCancelledOrder(
           orderNumber ||
           'Pesanan'
-        );
-
-
-        setPaymentOrderNumber(
-          null
         );
 
 
@@ -344,21 +432,29 @@ export default function App() {
 
 
       {/* =====================================================
-          PAYMENT SUCCESS ORDER STATUS
+          FULL ORDER STATUS
           ===================================================== */}
 
-      {paymentOrderNumber && (
+      {activeOrderNumber &&
+      showOrderStatus && (
 
         <OrderStatus
 
           orderNumber={
-            paymentOrderNumber
+            activeOrderNumber
           }
 
           onClose={() => {
 
-            setPaymentOrderNumber(
-              null
+            /*
+             * Jangan hapus activeOrderNumber.
+             *
+             * Cuma tutup modal besar.
+             * Mini status tetap muncul.
+             */
+
+            setShowOrderStatus(
+              false
             );
 
 
@@ -373,6 +469,148 @@ export default function App() {
           }}
 
         />
+
+      )}
+
+
+      {/* =====================================================
+          MINI ACTIVE ORDER POPUP
+          ===================================================== */}
+
+      {activeOrderNumber &&
+      !showOrderStatus &&
+      !paymentCancelledOrder && (
+
+        <div
+          className="
+            fixed
+            bottom-5
+            left-4
+            right-4
+            z-50
+            sm:left-auto
+            sm:right-6
+            sm:w-[390px]
+          "
+        >
+
+          <div
+            className="
+              rounded-2xl
+              border
+              border-[#d4af37]/30
+              bg-[#17100b]
+              shadow-2xl
+              shadow-black/70
+              overflow-hidden
+            "
+          >
+
+            <button
+              type="button"
+              onClick={() =>
+                setShowOrderStatus(
+                  true
+                )
+              }
+              className="
+                w-full
+                p-4
+                flex
+                items-center
+                gap-4
+                text-left
+                hover:bg-[#1d150f]
+                transition
+              "
+            >
+
+              <div
+                className="
+                  w-12
+                  h-12
+                  shrink-0
+                  rounded-xl
+                  bg-[#d4af37]/10
+                  border
+                  border-[#d4af37]/30
+                  flex
+                  items-center
+                  justify-center
+                "
+              >
+
+                <Coffee
+                  className="
+                    w-6
+                    h-6
+                    text-[#d4af37]
+                  "
+                />
+
+              </div>
+
+
+              <div
+                className="
+                  min-w-0
+                  flex-1
+                "
+              >
+
+                <p
+                  className="
+                    text-xs
+                    uppercase
+                    tracking-[0.15em]
+                    text-[#9f8d7a]
+                  "
+                >
+                  Pesanan Aktif
+                </p>
+
+
+                <p
+                  className="
+                    text-base
+                    font-bold
+                    text-[#f3ece2]
+                    mt-1
+                  "
+                >
+                  Lihat Status Pesanan
+                </p>
+
+
+                <p
+                  className="
+                    text-xs
+                    font-mono
+                    text-[#d4af37]
+                    mt-1
+                    truncate
+                  "
+                >
+                  {activeOrderNumber}
+                </p>
+
+              </div>
+
+
+              <ReceiptText
+                className="
+                  w-5
+                  h-5
+                  shrink-0
+                  text-[#d4af37]
+                "
+              />
+
+            </button>
+
+          </div>
+
+        </div>
 
       )}
 
@@ -499,7 +737,7 @@ export default function App() {
           FLOATING WHATSAPP BUTTON
           ===================================================== */}
 
-      {!paymentOrderNumber &&
+      {!activeOrderNumber &&
       !paymentCancelledOrder && (
 
         <a
