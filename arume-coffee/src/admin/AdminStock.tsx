@@ -8,6 +8,7 @@ import React, {
 import {
   Check,
   CheckCircle2,
+  ChevronDown,
   Clock3,
   Coffee,
   LogOut,
@@ -68,41 +69,30 @@ type AdminOrder = {
   order_number: string;
 
   customer_name?: string | null;
-
   customer_email?: string | null;
-
   customer_phone?: string | null;
 
   subtotal_amount?: number;
-
   shipping_fee?: number;
-
   total_amount?: number;
 
   delivery_type?: string | null;
-
   delivery_address?: string | null;
-
   delivery_distance_km?: number | null;
 
   status: string;
-
   status_label?: string | null;
 
   notes?: string | null;
 
   payment_provider?: string | null;
-
   payment_method?: string | null;
-
   payment_id?: string | null;
-
   payment_url?: string | null;
 
   paid_at?: string | null;
 
   created_at?: string | null;
-
   updated_at?: string | null;
 
   items?: OrderItem[];
@@ -168,6 +158,19 @@ export function AdminStock({
   ] =
     useState<OrderFilter>(
       'active'
+    );
+
+
+  /* =========================================================
+     HISTORY MONTH
+     ========================================================= */
+
+  const [
+    expandedHistoryMonth,
+    setExpandedHistoryMonth
+  ] =
+    useState<string | null>(
+      null
     );
 
 
@@ -376,7 +379,53 @@ export function AdminStock({
 
 
   /* =========================================================
-     AUTH HANDLER
+     FORMAT HISTORY MONTH
+     ========================================================= */
+
+  const formatHistoryMonth =
+    (
+      key:
+        string
+    ) => {
+
+      const [
+        year,
+        month
+      ] =
+        key.split(
+          '-'
+        );
+
+
+      const date =
+        new Date(
+          Number(
+            year
+          ),
+          Number(
+            month
+          ) - 1,
+          1
+        );
+
+
+      return new Intl.DateTimeFormat(
+        'id-ID',
+        {
+          month:
+            'long',
+
+          year:
+            'numeric'
+        }
+      ).format(
+        date
+      );
+    };
+
+
+  /* =========================================================
+     AUTH
      ========================================================= */
 
   const handleUnauthorized =
@@ -444,11 +493,8 @@ export function AdminStock({
 
 
         const productData =
-          result?.data
-            ?.products ||
-
+          result?.data?.products ||
           result?.products ||
-
           [];
 
 
@@ -556,11 +602,8 @@ export function AdminStock({
 
 
         const shippingData =
-          result?.data
-            ?.shipping_rates ||
-
+          result?.data?.shipping_rates ||
           result?.shipping_rates ||
-
           [];
 
 
@@ -687,11 +730,8 @@ export function AdminStock({
 
 
         const orderData =
-          result?.data
-            ?.orders ||
-
+          result?.data?.orders ||
           result?.orders ||
-
           [];
 
 
@@ -855,7 +895,7 @@ export function AdminStock({
 
 
   /* =========================================================
-     AUTO REFRESH ORDERS
+     AUTO REFRESH
      ========================================================= */
 
   useEffect(
@@ -889,7 +929,7 @@ export function AdminStock({
 
 
   /* =========================================================
-     STOCK HANDLER
+     STOCK
      ========================================================= */
 
   const changeStock =
@@ -964,6 +1004,7 @@ export function AdminStock({
                       )
                         ? Math.max(
                             0,
+
                             Math.floor(
                               number
                             )
@@ -1528,6 +1569,9 @@ export function AdminStock({
                 'DELETE',
 
               headers: {
+                Accept:
+                  'application/json',
+
                 'X-ADMIN-SECRET':
                   secret
               }
@@ -1535,14 +1579,55 @@ export function AdminStock({
           );
 
 
-        const result =
-          await response.json();
+        const rawResponse =
+          await response.text();
+
+
+        let result:
+          any = {};
+
+
+        try {
+
+          result =
+            rawResponse
+              ? JSON.parse(
+                  rawResponse
+                )
+              : {};
+
+        } catch {
+
+          result = {
+            message:
+              rawResponse
+          };
+        }
+
+
+        console.log(
+          'DELETE ORDER RESPONSE:',
+          {
+            status:
+              response.status,
+
+            ok:
+              response.ok,
+
+            result
+          }
+        );
 
 
         if (
           response.status ===
           401
         ) {
+
+          window.alert(
+            'Admin session tidak valid. Silakan login ulang.'
+          );
+
 
           handleUnauthorized();
 
@@ -1554,19 +1639,23 @@ export function AdminStock({
           !response.ok
         ) {
 
-          throw new Error(
+          const errorMessage =
+            result?.details ||
             result?.message ||
             result?.error ||
-            result?.details ||
-            'Gagal menghapus pesanan.'
+            `HTTP ${response.status}`;
+
+
+          window.alert(
+            `Gagal menghapus pesanan.\n\nHTTP ${response.status}\n\n${errorMessage}`
+          );
+
+
+          throw new Error(
+            errorMessage
           );
         }
 
-
-        /*
-         * Hapus langsung dari UI
-         * supaya terasa instan.
-         */
 
         setOrders(
           current =>
@@ -1583,9 +1672,10 @@ export function AdminStock({
         );
 
 
-        /*
-         * Sinkron ulang database.
-         */
+        window.alert(
+          `Pesanan ${order.order_number} berhasil dihapus.`
+        );
+
 
         await loadOrders(
           true
@@ -1620,7 +1710,7 @@ export function AdminStock({
 
 
   /* =========================================================
-     ORDER STATUS DISPLAY
+     STATUS UI
      ========================================================= */
 
   const getOrderStatusUI =
@@ -1795,10 +1885,92 @@ export function AdminStock({
     orderFilter ===
     'active'
       ? activeOrders
-      : orderFilter ===
-        'pending'
-        ? pendingOrders
-        : historyOrders;
+      : pendingOrders;
+
+
+  /* =========================================================
+     HISTORY GROUP
+     ========================================================= */
+
+  const historyGroups =
+    historyOrders.reduce<
+      Record<
+        string,
+        AdminOrder[]
+      >
+    >(
+      (
+        groups,
+        order
+      ) => {
+
+        if (
+          !order.created_at
+        ) {
+
+          return groups;
+        }
+
+
+        const date =
+          new Date(
+            order.created_at
+          );
+
+
+        if (
+          Number.isNaN(
+            date.getTime()
+          )
+        ) {
+
+          return groups;
+        }
+
+
+        const key =
+          `${date.getFullYear()}-${String(
+            date.getMonth() +
+            1
+          ).padStart(
+            2,
+            '0'
+          )}`;
+
+
+        if (
+          !groups[key]
+        ) {
+
+          groups[key] =
+            [];
+        }
+
+
+        groups[key].push(
+          order
+        );
+
+
+        return groups;
+
+      },
+      {}
+    );
+
+
+  const historyMonthKeys =
+    Object.keys(
+      historyGroups
+    ).sort(
+      (
+        a,
+        b
+      ) =>
+        b.localeCompare(
+          a
+        )
+    );
 
 
   /* =========================================================
@@ -1818,6 +1990,1020 @@ export function AdminStock({
 
 
   /* =========================================================
+     ORDER CARD
+     ========================================================= */
+
+  const renderOrderCard =
+    (
+      order:
+        AdminOrder
+    ) => {
+
+      const statusUI =
+        getOrderStatusUI(
+          order.status
+        );
+
+
+      const StatusIcon =
+        statusUI.icon;
+
+
+      const isUpdating =
+        updatingOrderNumber ===
+        order.order_number;
+
+
+      const isDeleting =
+        deletingOrderNumber ===
+        order.order_number;
+
+
+      const isDelivery =
+        order.delivery_type ===
+        'delivery';
+
+
+      return (
+
+        <div
+          key={
+            order.order_number
+          }
+          className="
+            bg-[#13100d]
+            border
+            border-[#302820]
+            rounded-2xl
+            overflow-hidden
+          "
+        >
+
+          <div
+            className="
+              p-5
+              border-b
+              border-[#282018]
+            "
+          >
+
+            <div
+              className="
+                flex
+                items-start
+                justify-between
+                gap-3
+              "
+            >
+
+              <div>
+
+                <p
+                  className="
+                    text-[10px]
+                    text-[#8f8377]
+                    uppercase
+                    tracking-widest
+                  "
+                >
+                  Nomor Pesanan
+                </p>
+
+                <p
+                  className="
+                    font-mono
+                    font-bold
+                    text-[#d4af37]
+                    mt-1
+                    break-all
+                  "
+                >
+                  {order.order_number}
+                </p>
+
+                <p
+                  className="
+                    text-xs
+                    text-[#76695e]
+                    mt-1
+                  "
+                >
+                  {formatDate(
+                    order.created_at
+                  )}
+                </p>
+
+              </div>
+
+
+              <div
+                className={`
+                  shrink-0
+                  flex
+                  items-center
+                  gap-1.5
+                  px-3
+                  py-2
+                  rounded-xl
+                  border
+                  text-xs
+                  font-bold
+                  ${statusUI.className}
+                `}
+              >
+
+                <StatusIcon
+                  className="
+                    w-4
+                    h-4
+                  "
+                />
+
+                <span
+                  className="
+                    hidden
+                    sm:inline
+                  "
+                >
+                  {statusUI.label}
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <div
+            className="
+              p-5
+              space-y-5
+            "
+          >
+
+            {/* CUSTOMER */}
+
+            <div>
+
+              <p
+                className="
+                  text-xs
+                  uppercase
+                  tracking-wider
+                  text-[#8f8377]
+                  mb-2
+                "
+              >
+                Customer
+              </p>
+
+              <p
+                className="
+                  font-bold
+                  text-lg
+                "
+              >
+                {order.customer_name ||
+                  'Customer'}
+              </p>
+
+
+              {order.customer_phone && (
+
+                <p
+                  className="
+                    text-sm
+                    text-[#ad9f91]
+                    mt-1
+                  "
+                >
+                  {order.customer_phone}
+                </p>
+
+              )}
+
+
+              {order.customer_email && (
+
+                <p
+                  className="
+                    text-sm
+                    text-[#817468]
+                  "
+                >
+                  {order.customer_email}
+                </p>
+
+              )}
+
+            </div>
+
+
+            {/* ITEMS */}
+
+            <div>
+
+              <p
+                className="
+                  text-xs
+                  uppercase
+                  tracking-wider
+                  text-[#8f8377]
+                  mb-2
+                "
+              >
+                Pesanan
+              </p>
+
+
+              <div
+                className="
+                  rounded-xl
+                  bg-[#0b0806]
+                  border
+                  border-[#282018]
+                  divide-y
+                  divide-[#282018]
+                "
+              >
+
+                {order.items &&
+                order.items.length >
+                  0 ? (
+
+                  order.items.map(
+                    (
+                      item,
+                      index
+                    ) => (
+
+                      <div
+                        key={
+                          item.id ||
+                          `${order.order_number}-${index}`
+                        }
+                        className="
+                          px-4
+                          py-3
+                          flex
+                          items-center
+                          justify-between
+                          gap-4
+                        "
+                      >
+
+                        <div>
+
+                          <p
+                            className="
+                              text-sm
+                              font-semibold
+                            "
+                          >
+                            {item.product_name ||
+                              item.product_id ||
+                              'Produk'}
+                          </p>
+
+                          <p
+                            className="
+                              text-xs
+                              text-[#817468]
+                              mt-1
+                            "
+                          >
+                            {Number(
+                              item.quantity ||
+                              0
+                            )}{' '}
+                            x{' '}
+                            {formatPrice(
+                              Number(
+                                item.price ||
+                                0
+                              )
+                            )}
+                          </p>
+
+                        </div>
+
+
+                        <p
+                          className="
+                            text-sm
+                            font-bold
+                            text-[#d4af37]
+                          "
+                        >
+                          {formatPrice(
+                            Number(
+                              item.subtotal ||
+                              0
+                            )
+                          )}
+                        </p>
+
+                      </div>
+
+                    )
+                  )
+
+                ) : (
+
+                  <div
+                    className="
+                      px-4
+                      py-3
+                      text-sm
+                      text-[#817468]
+                    "
+                  >
+                    Detail item tidak tersedia.
+                  </div>
+
+                )}
+
+              </div>
+
+            </div>
+
+
+            {/* DELIVERY */}
+
+            <div
+              className="
+                rounded-xl
+                bg-[#0b0806]
+                border
+                border-[#282018]
+                p-4
+              "
+            >
+
+              <div
+                className="
+                  flex
+                  items-start
+                  gap-3
+                "
+              >
+
+                {isDelivery ? (
+
+                  <Truck
+                    className="
+                      w-5
+                      h-5
+                      text-[#d4af37]
+                      shrink-0
+                    "
+                  />
+
+                ) : (
+
+                  <Store
+                    className="
+                      w-5
+                      h-5
+                      text-[#d4af37]
+                      shrink-0
+                    "
+                  />
+
+                )}
+
+
+                <div
+                  className="
+                    min-w-0
+                  "
+                >
+
+                  <p
+                    className="
+                      text-sm
+                      font-bold
+                    "
+                  >
+                    {isDelivery
+                      ? 'Delivery'
+                      : 'Ambil Sendiri'}
+                  </p>
+
+
+                  {isDelivery &&
+                  order.delivery_address && (
+
+                    <div
+                      className="
+                        flex
+                        gap-1.5
+                        mt-2
+                        text-xs
+                        text-[#9d9083]
+                      "
+                    >
+
+                      <MapPin
+                        className="
+                          w-3.5
+                          h-3.5
+                          shrink-0
+                          mt-0.5
+                        "
+                      />
+
+                      <span>
+                        {order.delivery_address}
+                      </span>
+
+                    </div>
+
+                  )}
+
+
+                  {isDelivery &&
+                  order.delivery_distance_km !==
+                    null &&
+                  order.delivery_distance_km !==
+                    undefined && (
+
+                    <p
+                      className="
+                        text-xs
+                        text-[#76695e]
+                        mt-2
+                      "
+                    >
+                      Jarak:{' '}
+                      {order.delivery_distance_km}{' '}
+                      KM
+                    </p>
+
+                  )}
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            {/* NOTES */}
+
+            {order.notes && (
+
+              <div>
+
+                <p
+                  className="
+                    text-xs
+                    uppercase
+                    tracking-wider
+                    text-[#8f8377]
+                    mb-2
+                  "
+                >
+                  Catatan
+                </p>
+
+                <div
+                  className="
+                    rounded-xl
+                    border
+                    border-[#382d24]
+                    bg-[#17110d]
+                    px-4
+                    py-3
+                    text-sm
+                    text-[#c5b8aa]
+                  "
+                >
+                  {order.notes}
+                </div>
+
+              </div>
+
+            )}
+
+
+            {/* TOTAL */}
+
+            <div
+              className="
+                border-t
+                border-[#282018]
+                pt-4
+                space-y-2
+              "
+            >
+
+              <div
+                className="
+                  flex
+                  justify-between
+                  text-sm
+                "
+              >
+
+                <span
+                  className="
+                    text-[#817468]
+                  "
+                >
+                  Subtotal
+                </span>
+
+                <span>
+                  {formatPrice(
+                    Number(
+                      order.subtotal_amount ||
+                      0
+                    )
+                  )}
+                </span>
+
+              </div>
+
+
+              {Number(
+                order.shipping_fee ||
+                0
+              ) >
+                0 && (
+
+                <div
+                  className="
+                    flex
+                    justify-between
+                    text-sm
+                  "
+                >
+
+                  <span
+                    className="
+                      text-[#817468]
+                    "
+                  >
+                    Ongkir
+                  </span>
+
+                  <span>
+                    {formatPrice(
+                      Number(
+                        order.shipping_fee ||
+                        0
+                      )
+                    )}
+                  </span>
+
+                </div>
+
+              )}
+
+
+              <div
+                className="
+                  flex
+                  justify-between
+                  items-end
+                  pt-2
+                "
+              >
+
+                <span
+                  className="
+                    font-bold
+                  "
+                >
+                  Total
+                </span>
+
+                <span
+                  className="
+                    text-xl
+                    font-bold
+                    text-[#d4af37]
+                  "
+                >
+                  {formatPrice(
+                    Number(
+                      order.total_amount ||
+                      0
+                    )
+                  )}
+                </span>
+
+              </div>
+
+            </div>
+
+
+            {/* PAID */}
+
+            {order.status ===
+              'paid' && (
+
+              <button
+                type="button"
+                onClick={() =>
+                  updateOrderStatus(
+                    order,
+                    'ready'
+                  )
+                }
+                disabled={
+                  isUpdating
+                }
+                className="
+                  w-full
+                  py-3.5
+                  rounded-xl
+                  bg-[#d4af37]
+                  text-black
+                  font-bold
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  hover:bg-[#e2c256]
+                  disabled:opacity-50
+                  transition
+                "
+              >
+
+                {isUpdating ? (
+
+                  <RefreshCcw
+                    className="
+                      w-5
+                      h-5
+                      animate-spin
+                    "
+                  />
+
+                ) : (
+
+                  <PackageCheck
+                    className="
+                      w-5
+                      h-5
+                    "
+                  />
+
+                )}
+
+                {isUpdating
+                  ? 'Memproses...'
+                  : 'Pesanan Sudah Siap'}
+
+              </button>
+
+            )}
+
+
+            {/* READY */}
+
+            {order.status ===
+              'ready' && (
+
+              <button
+                type="button"
+                onClick={() =>
+                  updateOrderStatus(
+                    order,
+                    'completed'
+                  )
+                }
+                disabled={
+                  isUpdating
+                }
+                className="
+                  w-full
+                  py-3.5
+                  rounded-xl
+                  bg-emerald-600
+                  text-white
+                  font-bold
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  hover:bg-emerald-500
+                  disabled:opacity-50
+                  transition
+                "
+              >
+
+                {isUpdating ? (
+
+                  <RefreshCcw
+                    className="
+                      w-5
+                      h-5
+                      animate-spin
+                    "
+                  />
+
+                ) : (
+
+                  <Check
+                    className="
+                      w-5
+                      h-5
+                    "
+                  />
+
+                )}
+
+                {isUpdating
+                  ? 'Memproses...'
+                  : 'Selesaikan Pesanan'}
+
+              </button>
+
+            )}
+
+
+            {/* COMPLETED */}
+
+            {order.status ===
+              'completed' && (
+
+              <div
+                className="
+                  rounded-xl
+                  bg-emerald-950/30
+                  border
+                  border-emerald-500/30
+                  text-emerald-300
+                  py-3
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  font-bold
+                "
+              >
+
+                <CheckCircle2
+                  className="
+                    w-5
+                    h-5
+                  "
+                />
+
+                Pesanan Selesai
+
+              </div>
+
+            )}
+
+
+            {/* PENDING */}
+
+            {order.status ===
+              'pending' && (
+
+              <div
+                className="
+                  space-y-3
+                "
+              >
+
+                <div
+                  className="
+                    rounded-xl
+                    bg-[#17120e]
+                    border
+                    border-[#3e342b]
+                    text-[#b8ab9e]
+                    py-3
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    font-semibold
+                  "
+                >
+
+                  <Clock3
+                    className="
+                      w-5
+                      h-5
+                    "
+                  />
+
+                  Menunggu Pembayaran
+
+                </div>
+
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    deleteOrder(
+                      order
+                    )
+                  }
+                  disabled={
+                    isDeleting
+                  }
+                  className="
+                    w-full
+                    py-3
+                    rounded-xl
+                    bg-red-950/30
+                    border
+                    border-red-500/30
+                    text-red-300
+                    font-bold
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    hover:bg-red-950/50
+                    disabled:opacity-50
+                    transition
+                  "
+                >
+
+                  {isDeleting ? (
+
+                    <RefreshCcw
+                      className="
+                        w-5
+                        h-5
+                        animate-spin
+                      "
+                    />
+
+                  ) : (
+
+                    <Trash2
+                      className="
+                        w-5
+                        h-5
+                      "
+                    />
+
+                  )}
+
+                  {isDeleting
+                    ? 'Menghapus...'
+                    : 'Hapus Pesanan'}
+
+                </button>
+
+              </div>
+
+            )}
+
+
+            {/* FAILED */}
+
+            {order.status ===
+              'failed' && (
+
+              <div
+                className="
+                  space-y-3
+                "
+              >
+
+                <div
+                  className="
+                    rounded-xl
+                    bg-red-950/30
+                    border
+                    border-red-500/30
+                    text-red-300
+                    py-3
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    font-semibold
+                  "
+                >
+
+                  <XCircle
+                    className="
+                      w-5
+                      h-5
+                    "
+                  />
+
+                  Pembayaran Gagal
+
+                </div>
+
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    deleteOrder(
+                      order
+                    )
+                  }
+                  disabled={
+                    isDeleting
+                  }
+                  className="
+                    w-full
+                    py-3
+                    rounded-xl
+                    bg-red-950/30
+                    border
+                    border-red-500/30
+                    text-red-300
+                    font-bold
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    hover:bg-red-950/50
+                    disabled:opacity-50
+                    transition
+                  "
+                >
+
+                  {isDeleting ? (
+
+                    <RefreshCcw
+                      className="
+                        w-5
+                        h-5
+                        animate-spin
+                      "
+                    />
+
+                  ) : (
+
+                    <Trash2
+                      className="
+                        w-5
+                        h-5
+                      "
+                    />
+
+                  )}
+
+                  {isDeleting
+                    ? 'Menghapus...'
+                    : 'Hapus Pesanan'}
+
+                </button>
+
+              </div>
+
+            )}
+
+
+            {/* REFUND */}
+
+            {order.status ===
+              'refunded' && (
+
+              <div
+                className="
+                  rounded-xl
+                  bg-purple-950/30
+                  border
+                  border-purple-500/30
+                  text-purple-300
+                  py-3
+                  flex
+                  items-center
+                  justify-center
+                  gap-2
+                  font-semibold
+                "
+              >
+
+                <RefreshCcw
+                  className="
+                    w-5
+                    h-5
+                  "
+                />
+
+                Pembayaran Dikembalikan
+
+              </div>
+
+            )}
+
+          </div>
+
+        </div>
+
+      );
+    };
+
+
+  /* =========================================================
      UI
      ========================================================= */
 
@@ -1831,10 +3017,7 @@ export function AdminStock({
       "
     >
 
-
-      {/* =====================================================
-          HEADER
-          ===================================================== */}
+      {/* HEADER */}
 
       <header
         className="
@@ -1860,7 +3043,6 @@ export function AdminStock({
           "
         >
 
-
           <div>
 
             <p
@@ -1873,7 +3055,6 @@ export function AdminStock({
             >
               Arume Coffee
             </p>
-
 
             <h1
               className="
@@ -1896,8 +3077,8 @@ export function AdminStock({
             "
           >
 
-
             <button
+              type="button"
               onClick={
                 loadAll
               }
@@ -1909,7 +3090,6 @@ export function AdminStock({
                 hover:border-[#d4af37]
                 transition
               "
-              title="Refresh"
             >
 
               <RefreshCcw
@@ -1923,6 +3103,7 @@ export function AdminStock({
 
 
             <button
+              type="button"
               onClick={
                 logout
               }
@@ -1937,8 +3118,6 @@ export function AdminStock({
                 border
                 border-red-500/30
                 text-red-300
-                hover:bg-red-950/50
-                transition
               "
             >
 
@@ -1949,27 +3128,12 @@ export function AdminStock({
                 "
               />
 
-
-              <span
-                className="
-                  hidden
-                  sm:inline
-                "
-              >
-                Keluar
-              </span>
-
             </button>
-
 
           </div>
 
         </div>
 
-
-        {/* ===================================================
-            MAIN TABS
-            =================================================== */}
 
         <div
           className="
@@ -1988,7 +3152,6 @@ export function AdminStock({
             "
           >
 
-
             <button
               type="button"
               onClick={() =>
@@ -1997,18 +3160,14 @@ export function AdminStock({
                 )
               }
               className={`
-                relative
                 flex
                 items-center
                 justify-center
                 gap-2
                 py-3
-                px-2
                 rounded-xl
                 border
-                text-sm
                 font-bold
-                transition
                 ${
                   activeTab ===
                   'orders'
@@ -2025,36 +3184,7 @@ export function AdminStock({
                 "
               />
 
-              <span>
-                Pesanan
-              </span>
-
-
-              {activeOrders.length >
-                0 && (
-
-                <span
-                  className={`
-                    min-w-[20px]
-                    h-5
-                    px-1.5
-                    rounded-full
-                    text-[10px]
-                    flex
-                    items-center
-                    justify-center
-                    ${
-                      activeTab ===
-                      'orders'
-                        ? 'bg-black text-[#d4af37]'
-                        : 'bg-[#d4af37] text-black'
-                    }
-                  `}
-                >
-                  {activeOrders.length}
-                </span>
-
-              )}
+              Pesanan
 
             </button>
 
@@ -2072,12 +3202,9 @@ export function AdminStock({
                 justify-center
                 gap-2
                 py-3
-                px-2
                 rounded-xl
                 border
-                text-sm
                 font-bold
-                transition
                 ${
                   activeTab ===
                   'stock'
@@ -2112,12 +3239,9 @@ export function AdminStock({
                 justify-center
                 gap-2
                 py-3
-                px-2
                 rounded-xl
                 border
-                text-sm
                 font-bold
-                transition
                 ${
                   activeTab ===
                   'shipping'
@@ -2138,17 +3262,12 @@ export function AdminStock({
 
             </button>
 
-
           </div>
 
         </div>
 
       </header>
 
-
-      {/* =====================================================
-          MAIN
-          ===================================================== */}
 
       <main
         className="
@@ -2158,11 +3277,6 @@ export function AdminStock({
           py-8
         "
       >
-
-
-        {/* ===================================================
-            MESSAGE
-            =================================================== */}
 
         {message && (
 
@@ -2205,7 +3319,7 @@ export function AdminStock({
 
 
         {/* ===================================================
-            ORDERS TAB
+            ORDERS
             =================================================== */}
 
         {activeTab ===
@@ -2213,38 +3327,25 @@ export function AdminStock({
 
           <section>
 
-
-            <div
+            <h2
               className="
+                text-3xl
+                font-bold
+              "
+            >
+              Pesanan
+            </h2>
+
+            <p
+              className="
+                text-[#ad9f91]
+                mt-1
                 mb-6
               "
             >
+              Pesanan diperbarui otomatis setiap 10 detik.
+            </p>
 
-              <h2
-                className="
-                  text-3xl
-                  font-bold
-                "
-              >
-                Pesanan
-              </h2>
-
-
-              <p
-                className="
-                  text-[#ad9f91]
-                  mt-1
-                "
-              >
-                Pesanan diperbarui otomatis setiap 10 detik.
-              </p>
-
-            </div>
-
-
-            {/* =================================================
-                SUMMARY
-                ================================================= */}
 
             <div
               className="
@@ -2254,7 +3355,6 @@ export function AdminStock({
                 mb-5
               "
             >
-
 
               <div
                 className="
@@ -2266,40 +3366,22 @@ export function AdminStock({
                 "
               >
 
-                <div
+                <p
                   className="
-                    flex
-                    items-center
-                    gap-2
+                    text-xs
                     text-amber-300
-                    mb-2
+                    font-bold
+                    uppercase
                   "
                 >
-
-                  <Coffee
-                    className="
-                      w-4
-                      h-4
-                    "
-                  />
-
-                  <span
-                    className="
-                      text-xs
-                      font-bold
-                      uppercase
-                    "
-                  >
-                    Disiapkan
-                  </span>
-
-                </div>
-
+                  Disiapkan
+                </p>
 
                 <p
                   className="
                     text-3xl
                     font-bold
+                    mt-2
                   "
                 >
                   {preparingOrders}
@@ -2318,40 +3400,22 @@ export function AdminStock({
                 "
               >
 
-                <div
+                <p
                   className="
-                    flex
-                    items-center
-                    gap-2
+                    text-xs
                     text-blue-300
-                    mb-2
+                    font-bold
+                    uppercase
                   "
                 >
-
-                  <PackageCheck
-                    className="
-                      w-4
-                      h-4
-                    "
-                  />
-
-                  <span
-                    className="
-                      text-xs
-                      font-bold
-                      uppercase
-                    "
-                  >
-                    Sudah Siap
-                  </span>
-
-                </div>
-
+                  Sudah Siap
+                </p>
 
                 <p
                   className="
                     text-3xl
                     font-bold
+                    mt-2
                   "
                 >
                   {readyOrders}
@@ -2359,13 +3423,8 @@ export function AdminStock({
 
               </div>
 
-
             </div>
 
-
-            {/* =================================================
-                ORDER FILTER
-                ================================================= */}
 
             <div
               className="
@@ -2375,7 +3434,6 @@ export function AdminStock({
                 mb-7
               "
             >
-
 
               <button
                 type="button"
@@ -2392,7 +3450,6 @@ export function AdminStock({
                   text-xs
                   sm:text-sm
                   font-bold
-                  transition
                   ${
                     orderFilter ===
                     'active'
@@ -2420,7 +3477,6 @@ export function AdminStock({
                   text-xs
                   sm:text-sm
                   font-bold
-                  transition
                   ${
                     orderFilter ===
                     'pending'
@@ -2448,7 +3504,6 @@ export function AdminStock({
                   text-xs
                   sm:text-sm
                   font-bold
-                  transition
                   ${
                     orderFilter ===
                     'history'
@@ -2460,13 +3515,8 @@ export function AdminStock({
                 Riwayat ({historyOrders.length})
               </button>
 
-
             </div>
 
-
-            {/* =================================================
-                ORDER LIST
-                ================================================= */}
 
             {ordersLoading ? (
 
@@ -2480,15 +3530,175 @@ export function AdminStock({
                 Memuat pesanan...
               </div>
 
+            ) : orderFilter ===
+              'history' ? (
+
+              <div
+                className="
+                  space-y-3
+                "
+              >
+
+                {historyMonthKeys.length ===
+                0 ? (
+
+                  <div
+                    className="
+                      rounded-2xl
+                      border
+                      border-[#302820]
+                      bg-[#13100d]
+                      p-10
+                      text-center
+                      text-[#8f8377]
+                    "
+                  >
+                    Belum ada riwayat pesanan.
+                  </div>
+
+                ) : (
+
+                  historyMonthKeys.map(
+                    monthKey => {
+
+                      const monthOrders =
+                        historyGroups[
+                          monthKey
+                        ] ||
+                        [];
+
+
+                      const expanded =
+                        expandedHistoryMonth ===
+                        monthKey;
+
+
+                      return (
+
+                        <div
+                          key={
+                            monthKey
+                          }
+                          className="
+                            rounded-2xl
+                            border
+                            border-[#302820]
+                            bg-[#13100d]
+                            overflow-hidden
+                          "
+                        >
+
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpandedHistoryMonth(
+                                current =>
+                                  current ===
+                                  monthKey
+                                    ? null
+                                    : monthKey
+                              )
+                            }
+                            className="
+                              w-full
+                              px-5
+                              py-5
+                              flex
+                              items-center
+                              justify-between
+                              gap-4
+                              text-left
+                            "
+                          >
+
+                            <div>
+
+                              <p
+                                className="
+                                  text-lg
+                                  font-bold
+                                  capitalize
+                                "
+                              >
+                                {formatHistoryMonth(
+                                  monthKey
+                                )}
+                              </p>
+
+                              <p
+                                className="
+                                  text-xs
+                                  text-[#8f8377]
+                                  mt-1
+                                "
+                              >
+                                {monthOrders.length}{' '}
+                                pesanan
+                              </p>
+
+                            </div>
+
+
+                            <ChevronDown
+                              className={`
+                                w-5
+                                h-5
+                                text-[#d4af37]
+                                transition-transform
+                                ${
+                                  expanded
+                                    ? 'rotate-180'
+                                    : ''
+                                }
+                              `}
+                            />
+
+                          </button>
+
+
+                          {expanded && (
+
+                            <div
+                              className="
+                                border-t
+                                border-[#302820]
+                                bg-[#0a0806]
+                                p-3
+                                sm:p-4
+                                space-y-4
+                              "
+                            >
+
+                              {monthOrders.map(
+                                order =>
+                                  renderOrderCard(
+                                    order
+                                  )
+                              )}
+
+                            </div>
+
+                          )}
+
+                        </div>
+
+                      );
+                    }
+                  )
+
+                )}
+
+              </div>
+
             ) : visibleOrders.length ===
               0 ? (
 
               <div
                 className="
-                  bg-[#13100d]
+                  rounded-2xl
                   border
                   border-[#302820]
-                  rounded-2xl
+                  bg-[#13100d]
                   p-10
                   text-center
                 "
@@ -2498,12 +3708,11 @@ export function AdminStock({
                   className="
                     w-10
                     h-10
-                    text-[#625548]
                     mx-auto
+                    text-[#625548]
                     mb-4
                   "
                 />
-
 
                 <p
                   className="
@@ -2511,34 +3720,10 @@ export function AdminStock({
                     text-lg
                   "
                 >
-
                   {orderFilter ===
                   'active'
                     ? 'Tidak ada pesanan aktif'
-                    : orderFilter ===
-                      'pending'
-                      ? 'Tidak ada pesanan menunggu pembayaran'
-                      : 'Belum ada riwayat pesanan'}
-
-                </p>
-
-
-                <p
-                  className="
-                    text-sm
-                    text-[#8f8377]
-                    mt-1
-                  "
-                >
-
-                  {orderFilter ===
-                  'active'
-                    ? 'Pesanan yang sudah dibayar akan muncul di sini.'
-                    : orderFilter ===
-                      'pending'
-                      ? 'Order yang belum dibayar akan muncul di sini.'
-                      : 'Pesanan selesai, gagal, atau refund akan tersimpan di sini.'}
-
+                    : 'Tidak ada pesanan menunggu pembayaran'}
                 </p>
 
               </div>
@@ -2551,1058 +3736,12 @@ export function AdminStock({
                 "
               >
 
-
                 {visibleOrders.map(
-                  order => {
-
-                    const statusUI =
-                      getOrderStatusUI(
-                        order.status
-                      );
-
-
-                    const StatusIcon =
-                      statusUI.icon;
-
-
-                    const isUpdating =
-                      updatingOrderNumber ===
-                      order.order_number;
-
-
-                    const isDeleting =
-                      deletingOrderNumber ===
-                      order.order_number;
-
-
-                    const isDelivery =
-                      order.delivery_type ===
-                      'delivery';
-
-
-                    return (
-
-                      <div
-                        key={
-                          order.order_number
-                        }
-                        className="
-                          bg-[#13100d]
-                          border
-                          border-[#302820]
-                          rounded-2xl
-                          overflow-hidden
-                        "
-                      >
-
-
-                        {/* =====================================
-                            ORDER HEADER
-                            ===================================== */}
-
-                        <div
-                          className="
-                            p-5
-                            border-b
-                            border-[#282018]
-                          "
-                        >
-
-                          <div
-                            className="
-                              flex
-                              items-start
-                              justify-between
-                              gap-3
-                            "
-                          >
-
-
-                            <div>
-
-                              <p
-                                className="
-                                  text-[10px]
-                                  text-[#8f8377]
-                                  uppercase
-                                  tracking-widest
-                                "
-                              >
-                                Nomor Pesanan
-                              </p>
-
-
-                              <p
-                                className="
-                                  font-mono
-                                  font-bold
-                                  text-[#d4af37]
-                                  mt-1
-                                  break-all
-                                "
-                              >
-                                {order.order_number}
-                              </p>
-
-
-                              <p
-                                className="
-                                  text-xs
-                                  text-[#76695e]
-                                  mt-1
-                                "
-                              >
-                                {formatDate(
-                                  order.created_at
-                                )}
-                              </p>
-
-                            </div>
-
-
-                            <div
-                              className={`
-                                shrink-0
-                                flex
-                                items-center
-                                gap-1.5
-                                px-3
-                                py-2
-                                rounded-xl
-                                border
-                                text-xs
-                                font-bold
-                                ${statusUI.className}
-                              `}
-                            >
-
-                              <StatusIcon
-                                className="
-                                  w-4
-                                  h-4
-                                "
-                              />
-
-
-                              <span
-                                className="
-                                  hidden
-                                  sm:inline
-                                "
-                              >
-                                {statusUI.label}
-                              </span>
-
-                            </div>
-
-
-                          </div>
-
-                        </div>
-
-
-                        {/* =====================================
-                            ORDER BODY
-                            ===================================== */}
-
-                        <div
-                          className="
-                            p-5
-                            space-y-5
-                          "
-                        >
-
-
-                          {/* CUSTOMER */}
-
-                          <div>
-
-                            <p
-                              className="
-                                text-xs
-                                uppercase
-                                tracking-wider
-                                text-[#8f8377]
-                                mb-2
-                              "
-                            >
-                              Customer
-                            </p>
-
-
-                            <p
-                              className="
-                                font-bold
-                                text-lg
-                              "
-                            >
-                              {order.customer_name ||
-                                'Customer'}
-                            </p>
-
-
-                            {order.customer_phone && (
-
-                              <p
-                                className="
-                                  text-sm
-                                  text-[#ad9f91]
-                                  mt-1
-                                "
-                              >
-                                {order.customer_phone}
-                              </p>
-
-                            )}
-
-
-                            {order.customer_email && (
-
-                              <p
-                                className="
-                                  text-sm
-                                  text-[#817468]
-                                "
-                              >
-                                {order.customer_email}
-                              </p>
-
-                            )}
-
-                          </div>
-
-
-                          {/* ITEMS */}
-
-                          <div>
-
-                            <p
-                              className="
-                                text-xs
-                                uppercase
-                                tracking-wider
-                                text-[#8f8377]
-                                mb-2
-                              "
-                            >
-                              Pesanan
-                            </p>
-
-
-                            <div
-                              className="
-                                rounded-xl
-                                bg-[#0b0806]
-                                border
-                                border-[#282018]
-                                divide-y
-                                divide-[#282018]
-                              "
-                            >
-
-
-                              {order.items &&
-                              order.items.length >
-                                0 ? (
-
-                                order.items.map(
-                                  (
-                                    item,
-                                    index
-                                  ) => (
-
-                                    <div
-                                      key={
-                                        item.id ||
-                                        `${order.order_number}-${index}`
-                                      }
-                                      className="
-                                        px-4
-                                        py-3
-                                        flex
-                                        items-center
-                                        justify-between
-                                        gap-4
-                                      "
-                                    >
-
-
-                                      <div>
-
-                                        <p
-                                          className="
-                                            text-sm
-                                            font-semibold
-                                          "
-                                        >
-                                          {item.product_name ||
-                                            item.product_id ||
-                                            'Produk'}
-                                        </p>
-
-
-                                        <p
-                                          className="
-                                            text-xs
-                                            text-[#817468]
-                                            mt-1
-                                          "
-                                        >
-                                          {Number(
-                                            item.quantity ||
-                                            0
-                                          )}{' '}
-                                          x{' '}
-                                          {formatPrice(
-                                            Number(
-                                              item.price ||
-                                              0
-                                            )
-                                          )}
-                                        </p>
-
-                                      </div>
-
-
-                                      <p
-                                        className="
-                                          text-sm
-                                          font-bold
-                                          text-[#d4af37]
-                                        "
-                                      >
-                                        {formatPrice(
-                                          Number(
-                                            item.subtotal ||
-                                            0
-                                          )
-                                        )}
-                                      </p>
-
-
-                                    </div>
-
-                                  )
-                                )
-
-                              ) : (
-
-                                <div
-                                  className="
-                                    px-4
-                                    py-3
-                                    text-sm
-                                    text-[#817468]
-                                  "
-                                >
-                                  Detail item tidak tersedia.
-                                </div>
-
-                              )}
-
-
-                            </div>
-
-                          </div>
-
-
-                          {/* DELIVERY */}
-
-                          <div
-                            className="
-                              rounded-xl
-                              bg-[#0b0806]
-                              border
-                              border-[#282018]
-                              p-4
-                            "
-                          >
-
-                            <div
-                              className="
-                                flex
-                                items-start
-                                gap-3
-                              "
-                            >
-
-                              {isDelivery ? (
-
-                                <Truck
-                                  className="
-                                    w-5
-                                    h-5
-                                    text-[#d4af37]
-                                    shrink-0
-                                  "
-                                />
-
-                              ) : (
-
-                                <Store
-                                  className="
-                                    w-5
-                                    h-5
-                                    text-[#d4af37]
-                                    shrink-0
-                                  "
-                                />
-
-                              )}
-
-
-                              <div
-                                className="
-                                  min-w-0
-                                "
-                              >
-
-                                <p
-                                  className="
-                                    text-sm
-                                    font-bold
-                                  "
-                                >
-                                  {isDelivery
-                                    ? 'Delivery'
-                                    : 'Ambil Sendiri'}
-                                </p>
-
-
-                                {isDelivery &&
-                                order.delivery_address && (
-
-                                  <div
-                                    className="
-                                      flex
-                                      gap-1.5
-                                      mt-2
-                                      text-xs
-                                      text-[#9d9083]
-                                    "
-                                  >
-
-                                    <MapPin
-                                      className="
-                                        w-3.5
-                                        h-3.5
-                                        shrink-0
-                                        mt-0.5
-                                      "
-                                    />
-
-
-                                    <span>
-                                      {order.delivery_address}
-                                    </span>
-
-                                  </div>
-
-                                )}
-
-
-                                {isDelivery &&
-                                order.delivery_distance_km !==
-                                  null &&
-                                order.delivery_distance_km !==
-                                  undefined && (
-
-                                  <p
-                                    className="
-                                      text-xs
-                                      text-[#76695e]
-                                      mt-2
-                                    "
-                                  >
-                                    Jarak:{' '}
-                                    {order.delivery_distance_km}{' '}
-                                    KM
-                                  </p>
-
-                                )}
-
-                              </div>
-
-                            </div>
-
-                          </div>
-
-
-                          {/* NOTES */}
-
-                          {order.notes && (
-
-                            <div>
-
-                              <p
-                                className="
-                                  text-xs
-                                  uppercase
-                                  tracking-wider
-                                  text-[#8f8377]
-                                  mb-2
-                                "
-                              >
-                                Catatan
-                              </p>
-
-
-                              <div
-                                className="
-                                  rounded-xl
-                                  border
-                                  border-[#382d24]
-                                  bg-[#17110d]
-                                  px-4
-                                  py-3
-                                  text-sm
-                                  text-[#c5b8aa]
-                                "
-                              >
-                                {order.notes}
-                              </div>
-
-                            </div>
-
-                          )}
-
-
-                          {/* TOTAL */}
-
-                          <div
-                            className="
-                              border-t
-                              border-[#282018]
-                              pt-4
-                              space-y-2
-                            "
-                          >
-
-
-                            <div
-                              className="
-                                flex
-                                justify-between
-                                text-sm
-                              "
-                            >
-
-                              <span
-                                className="
-                                  text-[#817468]
-                                "
-                              >
-                                Subtotal
-                              </span>
-
-
-                              <span>
-                                {formatPrice(
-                                  Number(
-                                    order.subtotal_amount ||
-                                    0
-                                  )
-                                )}
-                              </span>
-
-                            </div>
-
-
-                            {Number(
-                              order.shipping_fee ||
-                              0
-                            ) >
-                              0 && (
-
-                              <div
-                                className="
-                                  flex
-                                  justify-between
-                                  text-sm
-                                "
-                              >
-
-                                <span
-                                  className="
-                                    text-[#817468]
-                                  "
-                                >
-                                  Ongkir
-                                </span>
-
-
-                                <span>
-                                  {formatPrice(
-                                    Number(
-                                      order.shipping_fee ||
-                                      0
-                                    )
-                                  )}
-                                </span>
-
-                              </div>
-
-                            )}
-
-
-                            <div
-                              className="
-                                flex
-                                justify-between
-                                items-end
-                                pt-2
-                              "
-                            >
-
-                              <span
-                                className="
-                                  font-bold
-                                "
-                              >
-                                Total
-                              </span>
-
-
-                              <span
-                                className="
-                                  text-xl
-                                  font-bold
-                                  text-[#d4af37]
-                                "
-                              >
-                                {formatPrice(
-                                  Number(
-                                    order.total_amount ||
-                                    0
-                                  )
-                                )}
-                              </span>
-
-                            </div>
-
-                          </div>
-
-
-                          {/* =====================================
-                              PAID
-                              ===================================== */}
-
-                          {order.status ===
-                            'paid' && (
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateOrderStatus(
-                                  order,
-                                  'ready'
-                                )
-                              }
-                              disabled={
-                                isUpdating
-                              }
-                              className="
-                                w-full
-                                py-3.5
-                                rounded-xl
-                                bg-[#d4af37]
-                                text-black
-                                font-bold
-                                flex
-                                items-center
-                                justify-center
-                                gap-2
-                                hover:bg-[#e2c256]
-                                disabled:opacity-50
-                                transition
-                              "
-                            >
-
-                              {isUpdating ? (
-
-                                <RefreshCcw
-                                  className="
-                                    w-5
-                                    h-5
-                                    animate-spin
-                                  "
-                                />
-
-                              ) : (
-
-                                <PackageCheck
-                                  className="
-                                    w-5
-                                    h-5
-                                  "
-                                />
-
-                              )}
-
-
-                              {isUpdating
-                                ? 'Memproses...'
-                                : 'Pesanan Sudah Siap'}
-
-                            </button>
-
-                          )}
-
-
-                          {/* =====================================
-                              READY
-                              ===================================== */}
-
-                          {order.status ===
-                            'ready' && (
-
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateOrderStatus(
-                                  order,
-                                  'completed'
-                                )
-                              }
-                              disabled={
-                                isUpdating
-                              }
-                              className="
-                                w-full
-                                py-3.5
-                                rounded-xl
-                                bg-emerald-600
-                                text-white
-                                font-bold
-                                flex
-                                items-center
-                                justify-center
-                                gap-2
-                                hover:bg-emerald-500
-                                disabled:opacity-50
-                                transition
-                              "
-                            >
-
-                              {isUpdating ? (
-
-                                <RefreshCcw
-                                  className="
-                                    w-5
-                                    h-5
-                                    animate-spin
-                                  "
-                                />
-
-                              ) : (
-
-                                <Check
-                                  className="
-                                    w-5
-                                    h-5
-                                  "
-                                />
-
-                              )}
-
-
-                              {isUpdating
-                                ? 'Memproses...'
-                                : 'Selesaikan Pesanan'}
-
-                            </button>
-
-                          )}
-
-
-                          {/* =====================================
-                              COMPLETED
-                              ===================================== */}
-
-                          {order.status ===
-                            'completed' && (
-
-                            <div
-                              className="
-                                rounded-xl
-                                bg-emerald-950/30
-                                border
-                                border-emerald-500/30
-                                text-emerald-300
-                                py-3
-                                flex
-                                items-center
-                                justify-center
-                                gap-2
-                                font-bold
-                              "
-                            >
-
-                              <CheckCircle2
-                                className="
-                                  w-5
-                                  h-5
-                                "
-                              />
-
-                              Pesanan Selesai
-
-                            </div>
-
-                          )}
-
-
-                          {/* =====================================
-                              PENDING
-                              ===================================== */}
-
-                          {order.status ===
-                            'pending' && (
-
-                            <div
-                              className="
-                                space-y-3
-                              "
-                            >
-
-                              <div
-                                className="
-                                  rounded-xl
-                                  bg-[#17120e]
-                                  border
-                                  border-[#3e342b]
-                                  text-[#b8ab9e]
-                                  py-3
-                                  flex
-                                  items-center
-                                  justify-center
-                                  gap-2
-                                  font-semibold
-                                "
-                              >
-
-                                <Clock3
-                                  className="
-                                    w-5
-                                    h-5
-                                  "
-                                />
-
-                                Menunggu Pembayaran
-
-                              </div>
-
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  deleteOrder(
-                                    order
-                                  )
-                                }
-                                disabled={
-                                  isDeleting
-                                }
-                                className="
-                                  w-full
-                                  py-3
-                                  rounded-xl
-                                  bg-red-950/30
-                                  border
-                                  border-red-500/30
-                                  text-red-300
-                                  font-bold
-                                  flex
-                                  items-center
-                                  justify-center
-                                  gap-2
-                                  hover:bg-red-950/50
-                                  disabled:opacity-50
-                                  transition
-                                "
-                              >
-
-                                {isDeleting ? (
-
-                                  <RefreshCcw
-                                    className="
-                                      w-5
-                                      h-5
-                                      animate-spin
-                                    "
-                                  />
-
-                                ) : (
-
-                                  <Trash2
-                                    className="
-                                      w-5
-                                      h-5
-                                    "
-                                  />
-
-                                )}
-
-
-                                {isDeleting
-                                  ? 'Menghapus...'
-                                  : 'Hapus Pesanan'}
-
-                              </button>
-
-                            </div>
-
-                          )}
-
-
-                          {/* =====================================
-                              FAILED
-                              ===================================== */}
-
-                          {order.status ===
-                            'failed' && (
-
-                            <div
-                              className="
-                                space-y-3
-                              "
-                            >
-
-                              <div
-                                className="
-                                  rounded-xl
-                                  bg-red-950/30
-                                  border
-                                  border-red-500/30
-                                  text-red-300
-                                  py-3
-                                  flex
-                                  items-center
-                                  justify-center
-                                  gap-2
-                                  font-semibold
-                                "
-                              >
-
-                                <XCircle
-                                  className="
-                                    w-5
-                                    h-5
-                                  "
-                                />
-
-                                Pembayaran Gagal
-
-                              </div>
-
-
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  deleteOrder(
-                                    order
-                                  )
-                                }
-                                disabled={
-                                  isDeleting
-                                }
-                                className="
-                                  w-full
-                                  py-3
-                                  rounded-xl
-                                  bg-red-950/30
-                                  border
-                                  border-red-500/30
-                                  text-red-300
-                                  font-bold
-                                  flex
-                                  items-center
-                                  justify-center
-                                  gap-2
-                                  hover:bg-red-950/50
-                                  disabled:opacity-50
-                                  transition
-                                "
-                              >
-
-                                {isDeleting ? (
-
-                                  <RefreshCcw
-                                    className="
-                                      w-5
-                                      h-5
-                                      animate-spin
-                                    "
-                                  />
-
-                                ) : (
-
-                                  <Trash2
-                                    className="
-                                      w-5
-                                      h-5
-                                    "
-                                  />
-
-                                )}
-
-
-                                {isDeleting
-                                  ? 'Menghapus...'
-                                  : 'Hapus Pesanan'}
-
-                              </button>
-
-                            </div>
-
-                          )}
-
-
-                          {/* =====================================
-                              REFUNDED
-                              ===================================== */}
-
-                          {order.status ===
-                            'refunded' && (
-
-                            <div
-                              className="
-                                rounded-xl
-                                bg-purple-950/30
-                                border
-                                border-purple-500/30
-                                text-purple-300
-                                py-3
-                                flex
-                                items-center
-                                justify-center
-                                gap-2
-                                font-semibold
-                              "
-                            >
-
-                              <RefreshCcw
-                                className="
-                                  w-5
-                                  h-5
-                                "
-                              />
-
-                              Pembayaran Dikembalikan
-
-                            </div>
-
-                          )}
-
-
-                        </div>
-
-                      </div>
-
-                    );
-                  }
+                  order =>
+                    renderOrderCard(
+                      order
+                    )
                 )}
-
 
               </div>
 
@@ -3614,7 +3753,7 @@ export function AdminStock({
 
 
         {/* ===================================================
-            STOCK TAB
+            STOCK
             =================================================== */}
 
         {activeTab ===
@@ -3622,33 +3761,24 @@ export function AdminStock({
 
           <section>
 
-
-            <div
+            <h2
               className="
+                text-3xl
+                font-bold
+                mb-1
+              "
+            >
+              Stok Produk
+            </h2>
+
+            <p
+              className="
+                text-[#ad9f91]
                 mb-7
               "
             >
-
-              <h2
-                className="
-                  text-3xl
-                  font-bold
-                "
-              >
-                Stok Produk
-              </h2>
-
-
-              <p
-                className="
-                  text-[#ad9f91]
-                  mt-1
-                "
-              >
-                Ubah jumlah stok lalu tekan Simpan pada produk.
-              </p>
-
-            </div>
+              Ubah jumlah stok lalu tekan Simpan.
+            </p>
 
 
             {loading ? (
@@ -3673,7 +3803,6 @@ export function AdminStock({
                 "
               >
 
-
                 {products.map(
                   product => (
 
@@ -3690,92 +3819,39 @@ export function AdminStock({
                       "
                     >
 
-
-                      <div
+                      <p
                         className="
-                          flex
-                          justify-between
-                          gap-4
+                          text-[#d4af37]
+                          text-xs
+                          uppercase
+                        "
+                      >
+                        {product.category ||
+                          'Produk'}
+                      </p>
+
+                      <h3
+                        className="
+                          font-bold
+                          text-lg
+                          mt-1
+                        "
+                      >
+                        {product.name}
+                      </h3>
+
+                      <p
+                        className="
+                          text-[#a89b8d]
+                          text-sm
+                          mt-1
                           mb-5
                         "
                       >
-
-
-                        <div>
-
-                          <p
-                            className="
-                              text-xs
-                              text-[#d4af37]
-                              uppercase
-                              tracking-wider
-                              mb-1
-                            "
-                          >
-
-                            {product.category ||
-                              'Produk'}
-
-                          </p>
-
-
-                          <h3
-                            className="
-                              text-lg
-                              font-bold
-                            "
-                          >
-                            {product.name}
-                          </h3>
-
-
-                          <p
-                            className="
-                              text-sm
-                              text-[#a89b8d]
-                              mt-1
-                            "
-                          >
-                            {formatPrice(
-                              Number(
-                                product.price
-                              )
-                            )}
-                          </p>
-
-                        </div>
-
-
-                        <div
-                          className="
-                            text-right
-                          "
-                        >
-
-                          <p
-                            className="
-                              text-xs
-                              text-[#8f8377]
-                            "
-                          >
-                            ID
-                          </p>
-
-
-                          <p
-                            className="
-                              font-mono
-                              text-xs
-                              text-[#b8ab9e]
-                            "
-                          >
-                            {product.id}
-                          </p>
-
-                        </div>
-
-
-                      </div>
+                        {formatPrice(
+                          product.price
+                        )}
+                      </p>
 
 
                       <div
@@ -3786,8 +3862,8 @@ export function AdminStock({
                         "
                       >
 
-
                         <button
+                          type="button"
                           onClick={() =>
                             changeStock(
                               product.id,
@@ -3800,21 +3876,15 @@ export function AdminStock({
                             rounded-xl
                             border
                             border-[#44372c]
-                            flex
-                            items-center
-                            justify-center
-                            hover:border-[#d4af37]
-                            transition
                           "
                         >
-
                           <Minus
                             className="
                               w-4
                               h-4
+                              mx-auto
                             "
                           />
-
                         </button>
 
 
@@ -3834,21 +3904,20 @@ export function AdminStock({
                           className="
                             flex-1
                             min-w-0
-                            text-center
-                            text-xl
-                            font-bold
+                            h-11
                             bg-[#090705]
                             border
                             border-[#44372c]
                             rounded-xl
-                            h-11
-                            outline-none
-                            focus:border-[#d4af37]
+                            text-center
+                            text-xl
+                            font-bold
                           "
                         />
 
 
                         <button
+                          type="button"
                           onClick={() =>
                             changeStock(
                               product.id,
@@ -3861,28 +3930,22 @@ export function AdminStock({
                             rounded-xl
                             border
                             border-[#44372c]
-                            flex
-                            items-center
-                            justify-center
-                            hover:border-[#d4af37]
-                            transition
                           "
                         >
-
                           <Plus
                             className="
                               w-4
                               h-4
+                              mx-auto
                             "
                           />
-
                         </button>
-
 
                       </div>
 
 
                       <button
+                        type="button"
                         onClick={() =>
                           saveStock(
                             product
@@ -3895,18 +3958,16 @@ export function AdminStock({
                         className="
                           mt-4
                           w-full
+                          py-3
+                          rounded-xl
+                          bg-[#d4af37]
+                          text-black
+                          font-bold
                           flex
                           items-center
                           justify-center
                           gap-2
-                          bg-[#d4af37]
-                          hover:bg-[#e2c256]
                           disabled:opacity-50
-                          text-black
-                          font-bold
-                          rounded-xl
-                          py-3
-                          transition
                         "
                       >
 
@@ -3917,7 +3978,6 @@ export function AdminStock({
                           "
                         />
 
-
                         {savingId ===
                         product.id
                           ? 'Menyimpan...'
@@ -3925,12 +3985,10 @@ export function AdminStock({
 
                       </button>
 
-
                     </div>
 
                   )
                 )}
-
 
               </div>
 
@@ -3942,7 +4000,7 @@ export function AdminStock({
 
 
         {/* ===================================================
-            SHIPPING TAB
+            SHIPPING
             =================================================== */}
 
         {activeTab ===
@@ -3950,67 +4008,24 @@ export function AdminStock({
 
           <section>
 
-
-            <div
+            <h2
               className="
-                mb-7
-                flex
-                items-start
-                gap-4
+                text-3xl
+                font-bold
+                mb-1
               "
             >
+              Pengaturan Ongkir
+            </h2>
 
-
-              <div
-                className="
-                  w-12
-                  h-12
-                  shrink-0
-                  rounded-2xl
-                  bg-[#d4af37]/10
-                  border
-                  border-[#d4af37]/30
-                  flex
-                  items-center
-                  justify-center
-                "
-              >
-
-                <Truck
-                  className="
-                    w-6
-                    h-6
-                    text-[#d4af37]
-                  "
-                />
-
-              </div>
-
-
-              <div>
-
-                <h2
-                  className="
-                    text-3xl
-                    font-bold
-                  "
-                >
-                  Pengaturan Ongkir
-                </h2>
-
-
-                <p
-                  className="
-                    text-[#ad9f91]
-                    mt-1
-                  "
-                >
-                  Atur tarif pengiriman berdasarkan jarak dari Arume Coffee.
-                </p>
-
-              </div>
-
-            </div>
+            <p
+              className="
+                text-[#ad9f91]
+                mb-7
+              "
+            >
+              Atur tarif berdasarkan jarak pelanggan.
+            </p>
 
 
             {shippingLoading ? (
@@ -4018,27 +4033,11 @@ export function AdminStock({
               <div
                 className="
                   text-center
-                  py-16
+                  py-20
                   text-[#a89b8d]
                 "
               >
                 Memuat tarif ongkir...
-              </div>
-
-            ) : shippingRates.length ===
-              0 ? (
-
-              <div
-                className="
-                  bg-[#13100d]
-                  border
-                  border-[#302820]
-                  rounded-2xl
-                  p-6
-                  text-[#ad9f91]
-                "
-              >
-                Belum ada tarif ongkir.
               </div>
 
             ) : (
@@ -4050,7 +4049,6 @@ export function AdminStock({
                   gap-4
                 "
               >
-
 
                 {shippingRates.map(
                   rate => (
@@ -4068,47 +4066,39 @@ export function AdminStock({
                       "
                     >
 
-
                       <div
                         className="
                           flex
-                          items-center
                           justify-between
-                          gap-4
+                          items-center
+                          gap-3
                           mb-5
                         "
                       >
-
 
                         <div>
 
                           <p
                             className="
                               text-xs
-                              text-[#d4af37]
                               uppercase
-                              tracking-wider
+                              text-[#d4af37]
                             "
                           >
                             Zona Pengiriman
                           </p>
 
-
-                          <h3
+                          <p
                             className="
-                              text-lg
                               font-bold
                               mt-1
                             "
                           >
-
-                            {rate.min_distance}{' '}
-                            KM
-                            {' — '}
-                            {rate.max_distance}{' '}
-                            KM
-
-                          </h3>
+                            {rate.min_distance}
+                            {' – '}
+                            {rate.max_distance}
+                            {' KM'}
+                          </p>
 
                         </div>
 
@@ -4127,21 +4117,17 @@ export function AdminStock({
                             border
                             text-xs
                             font-bold
-                            transition
                             ${
                               rate.active
-                                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                                : 'bg-red-950/30 border-red-500/30 text-red-300'
+                                ? 'text-emerald-300 border-emerald-500/30'
+                                : 'text-red-300 border-red-500/30'
                             }
                           `}
                         >
-
                           {rate.active
                             ? 'AKTIF'
                             : 'NONAKTIF'}
-
                         </button>
-
 
                       </div>
 
@@ -4155,186 +4141,95 @@ export function AdminStock({
                         "
                       >
 
+                        <input
+                          type="number"
+                          value={
+                            rate.min_distance
+                          }
+                          onChange={
+                            e =>
+                              updateShippingField(
+                                rate.id,
+                                'min_distance',
+                                e.target.value
+                              )
+                          }
+                          className="
+                            h-11
+                            bg-[#090705]
+                            border
+                            border-[#44372c]
+                            rounded-xl
+                            px-3
+                          "
+                        />
 
-                        <div>
-
-                          <label
-                            className="
-                              text-xs
-                              text-[#a89b8d]
-                              block
-                              mb-2
-                            "
-                          >
-                            Dari KM
-                          </label>
-
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={
-                              rate.min_distance
-                            }
-                            onChange={
-                              e =>
-                                updateShippingField(
-                                  rate.id,
-                                  'min_distance',
-                                  e.target.value
-                                )
-                            }
-                            className="
-                              w-full
-                              bg-[#090705]
-                              border
-                              border-[#44372c]
-                              rounded-xl
-                              h-11
-                              px-3
-                              outline-none
-                              focus:border-[#d4af37]
-                            "
-                          />
-
-                        </div>
-
-
-                        <div>
-
-                          <label
-                            className="
-                              text-xs
-                              text-[#a89b8d]
-                              block
-                              mb-2
-                            "
-                          >
-                            Sampai KM
-                          </label>
-
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={
-                              rate.max_distance
-                            }
-                            onChange={
-                              e =>
-                                updateShippingField(
-                                  rate.id,
-                                  'max_distance',
-                                  e.target.value
-                                )
-                            }
-                            className="
-                              w-full
-                              bg-[#090705]
-                              border
-                              border-[#44372c]
-                              rounded-xl
-                              h-11
-                              px-3
-                              outline-none
-                              focus:border-[#d4af37]
-                            "
-                          />
-
-                        </div>
-
+                        <input
+                          type="number"
+                          value={
+                            rate.max_distance
+                          }
+                          onChange={
+                            e =>
+                              updateShippingField(
+                                rate.id,
+                                'max_distance',
+                                e.target.value
+                              )
+                          }
+                          className="
+                            h-11
+                            bg-[#090705]
+                            border
+                            border-[#44372c]
+                            rounded-xl
+                            px-3
+                          "
+                        />
 
                       </div>
 
 
-                      <div>
-
-                        <label
-                          className="
-                            text-xs
-                            text-[#a89b8d]
-                            block
-                            mb-2
-                          "
-                        >
-                          Tarif Ongkir
-                        </label>
-
-
-                        <div
-                          className="
-                            relative
-                          "
-                        >
-
-                          <span
-                            className="
-                              absolute
-                              left-4
-                              top-1/2
-                              -translate-y-1/2
-                              text-[#d4af37]
-                              font-bold
-                            "
-                          >
-                            Rp
-                          </span>
-
-
-                          <input
-                            type="number"
-                            min="0"
-                            step="1000"
-                            value={
-                              rate.fee
-                            }
-                            onChange={
-                              e =>
-                                updateShippingField(
-                                  rate.id,
-                                  'fee',
-                                  e.target.value
-                                )
-                            }
-                            className="
-                              w-full
-                              bg-[#090705]
-                              border
-                              border-[#44372c]
-                              rounded-xl
-                              h-12
-                              pl-12
-                              pr-4
-                              text-lg
-                              font-bold
-                              outline-none
-                              focus:border-[#d4af37]
-                            "
-                          />
-
-                        </div>
-
-
-                        <p
-                          className="
-                            text-sm
-                            text-[#8f8377]
-                            mt-2
-                          "
-                        >
-                          {formatPrice(
-                            Number(
-                              rate.fee
+                      <input
+                        type="number"
+                        value={
+                          rate.fee
+                        }
+                        onChange={
+                          e =>
+                            updateShippingField(
+                              rate.id,
+                              'fee',
+                              e.target.value
                             )
-                          )}
-                        </p>
+                        }
+                        className="
+                          w-full
+                          h-11
+                          bg-[#090705]
+                          border
+                          border-[#44372c]
+                          rounded-xl
+                          px-3
+                        "
+                      />
 
-                      </div>
+
+                      <p
+                        className="
+                          text-[#d4af37]
+                          font-bold
+                          mt-2
+                        "
+                      >
+                        {formatPrice(
+                          rate.fee
+                        )}
+                      </p>
 
 
                       <button
+                        type="button"
                         onClick={() =>
                           saveShippingRate(
                             rate
@@ -4347,18 +4242,16 @@ export function AdminStock({
                         className="
                           mt-5
                           w-full
+                          py-3
+                          rounded-xl
+                          bg-[#d4af37]
+                          text-black
+                          font-bold
                           flex
                           items-center
                           justify-center
                           gap-2
-                          bg-[#d4af37]
-                          hover:bg-[#e2c256]
                           disabled:opacity-50
-                          text-black
-                          font-bold
-                          rounded-xl
-                          py-3
-                          transition
                         "
                       >
 
@@ -4369,7 +4262,6 @@ export function AdminStock({
                           "
                         />
 
-
                         {savingShippingId ===
                         rate.id
                           ? 'Menyimpan...'
@@ -4377,66 +4269,22 @@ export function AdminStock({
 
                       </button>
 
-
                     </div>
 
                   )
                 )}
 
-
               </div>
 
             )}
-
-
-            <div
-              className="
-                mt-5
-                rounded-2xl
-                border
-                border-[#302820]
-                bg-[#100c09]
-                px-5
-                py-4
-              "
-            >
-
-              <p
-                className="
-                  text-sm
-                  font-semibold
-                  text-[#d4af37]
-                "
-              >
-                Cara kerja tarif
-              </p>
-
-
-              <p
-                className="
-                  text-sm
-                  text-[#a89b8d]
-                  mt-1
-                "
-              >
-
-                Sistem akan memilih zona berdasarkan jarak pelanggan.
-                Tarif yang dinonaktifkan tidak akan digunakan saat checkout.
-
-              </p>
-
-            </div>
-
 
           </section>
 
         )}
 
-
       </main>
-
 
     </div>
 
   );
-                                    }
+                        }
