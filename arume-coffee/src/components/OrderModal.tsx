@@ -38,16 +38,15 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   // ================================
   // CHECKOUT IDEMPOTENCY
   // ================================
-  // Satu proses checkout = satu checkout_id.
-  // Kalau user double click / retry request,
-  // checkout_id tetap sama sehingga order
-  // tidak dibuat berkali-kali.
   const checkoutIdRef = useRef<string | null>(null);
 
   if (!item) {
     return null;
   }
 
+  // Harga ini hanya untuk tampilan frontend.
+  // Harga pembayaran sebenarnya diambil backend
+  // berdasarkan product_id dari Supabase.
   const totalPrice = item.price * quantity;
 
   const formattedTotalPrice =
@@ -65,10 +64,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       return;
     }
 
-    if (!customerEmail.trim()) {
-      alert('Mohon isi email Anda terlebih dahulu.');
-      return;
-    }
+    // EMAIL TIDAK WAJIB
 
     // ================================
     // ANTI DOUBLE CLICK
@@ -107,16 +103,22 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
             customer: {
               name: customerName.trim(),
+
+              // Email boleh kosong
               email: customerEmail.trim(),
 
-              // Backend saat ini membutuhkan phone.
-              // Kalau user tidak isi,
-              // kirim fallback sementara.
+              // Nomor WA boleh kosong dari user.
+              // Fallback dipertahankan sementara
+              // agar tidak merusak backend lama
+              // jika backend masih membutuhkan phone.
               phone:
                 customerPhone.trim() ||
                 '081234567890',
             },
 
+            // PENTING:
+            // Frontend tidak mengirim harga.
+            // Backend mengambil harga dari Supabase.
             items: [
               {
                 product_id: item.id,
@@ -250,11 +252,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         paymentResult?.data?.redirect_url ||
         paymentResult?.data?.payment_link_url ||
         paymentResult?.data?.payment_url ||
-
         paymentResult?.data?.payment?.redirect_url ||
         paymentResult?.data?.payment?.payment_link_url ||
         paymentResult?.data?.payment?.payment_url ||
-
         paymentResult?.redirect_url ||
         paymentResult?.payment_link_url ||
         paymentResult?.payment_url;
@@ -276,14 +276,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       );
 
       // ==========================================
-      // ORDER SUDAH BERHASIL
+      // RESET CHECKOUT ID
       // ==========================================
-      // Reset checkout ID supaya transaksi
-      // berikutnya membuat checkout baru.
       checkoutIdRef.current = null;
 
       // ==========================================
-      // REDIRECT USER KE XENDIT CHECKOUT
+      // REDIRECT KE XENDIT
       // ==========================================
       window.location.href = paymentUrl;
     } catch (error: any) {
@@ -300,14 +298,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           )
       );
 
-      // Jangan reset checkoutIdRef di sini.
-      //
-      // Kalau order sebenarnya sudah berhasil
-      // tetapi request payment gagal,
-      // retry akan menggunakan checkout_id
-      // yang sama.
-      //
-      // Ini mencegah order ganda.
+      // checkoutIdRef tidak di-reset kalau gagal.
+      // Supaya retry tidak membuat order ganda.
     } finally {
       setLoading(false);
     }
@@ -346,9 +338,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           duration-300
         "
       >
-        {/* ================================
-            CLOSE BUTTON
-        ================================= */}
+        {/* CLOSE BUTTON */}
         <button
           onClick={onClose}
           disabled={loading}
@@ -377,9 +367,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           <X className="w-5 h-5" />
         </button>
 
-        {/* ================================
-            HEADER IMAGE
-        ================================= */}
+        {/* HEADER IMAGE */}
         <div
           className="
             relative
@@ -478,9 +466,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           </div>
         </div>
 
-        {/* ================================
-            MODAL BODY
-        ================================= */}
+        {/* MODAL BODY */}
         <div
           className="
             p-6
@@ -501,9 +487,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             {item.description}
           </p>
 
-          {/* ================================
-              CUSTOMER FORM
-          ================================= */}
+          {/* CUSTOMER FORM */}
           <div
             className="
               space-y-3
@@ -528,7 +512,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             <div
               className="
                 grid
-                grid-cols-2
+                grid-cols-1
+                sm:grid-cols-2
                 gap-3
               "
             >
@@ -561,10 +546,10 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 required
               />
 
-              {/* EMAIL */}
+              {/* EMAIL OPTIONAL */}
               <input
                 type="email"
-                placeholder="Email *"
+                placeholder="Email (Opsional)"
                 value={customerEmail}
                 onChange={(e) =>
                   setCustomerEmail(
@@ -587,14 +572,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                   focus:border-[#d4af37]
                   disabled:opacity-50
                 "
-                required
               />
             </div>
 
-            {/* PHONE */}
+            {/* PHONE OPTIONAL */}
             <input
               type="tel"
-              placeholder="Nomor WhatsApp"
+              placeholder="Nomor WhatsApp (Opsional)"
               value={customerPhone}
               onChange={(e) =>
                 setCustomerPhone(
@@ -620,9 +604,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             />
           </div>
 
-          {/* ================================
-              QUANTITY
-          ================================= */}
+          {/* QUANTITY */}
           <div
             className="
               flex
@@ -652,7 +634,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 gap-3
               "
             >
-              {/* MINUS */}
               <button
                 type="button"
                 onClick={() =>
@@ -682,7 +663,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 <Minus className="w-4 h-4" />
               </button>
 
-              {/* QUANTITY NUMBER */}
               <span
                 className="
                   font-bold
@@ -695,7 +675,6 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 {quantity}
               </span>
 
-              {/* PLUS */}
               <button
                 type="button"
                 onClick={() =>
@@ -724,9 +703,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </div>
           </div>
 
-          {/* ================================
-              ICE & SUGAR
-          ================================= */}
+          {/* ICE & SUGAR */}
           <div
             className="
               grid
@@ -843,9 +820,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </div>
           </div>
 
-          {/* ================================
-              NOTES
-          ================================= */}
+          {/* NOTES */}
           <div>
             <label
               className="
@@ -889,9 +864,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           </div>
         </div>
 
-        {/* ================================
-            MODAL FOOTER
-        ================================= */}
+        {/* MODAL FOOTER */}
         <div
           className="
             p-6
@@ -929,9 +902,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
             </span>
           </div>
 
-          {/* ================================
-              PAY BUTTON
-          ================================= */}
+          {/* PAY BUTTON */}
           <button
             type="button"
             onClick={handleCheckoutXendit}
