@@ -11,6 +11,7 @@ import { PaymentSection } from './components/PaymentSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { OrderModal } from './components/OrderModal';
+import { OrderStatus } from './components/OrderStatus';
 
 import {
   AdminLogin
@@ -84,6 +85,24 @@ export default function App() {
     );
 
 
+  const [
+    paymentOrderNumber,
+    setPaymentOrderNumber
+  ] =
+    useState<string | null>(
+      null
+    );
+
+
+  const [
+    paymentCancelledOrder,
+    setPaymentCancelledOrder
+  ] =
+    useState<string | null>(
+      null
+    );
+
+
   const isAdminPage =
 
     window.location.pathname ===
@@ -97,118 +116,98 @@ export default function App() {
      PAYMENT RETURN HANDLER
      ========================================================= */
 
-  useEffect(() => {
+  useEffect(
+    () => {
 
-    /*
-     * Payment return handler
-     * hanya dijalankan di website utama.
-     */
+      if (
+        isAdminPage
+      ) {
 
-    if (
+        return;
+      }
+
+
+      const params =
+        new URLSearchParams(
+          window.location.search
+        );
+
+
+      const payment =
+        params.get(
+          'payment'
+        );
+
+
+      const orderNumber =
+        params.get(
+          'order'
+        );
+
+
+      /* =======================================================
+         PAYMENT SUCCESS
+         ======================================================= */
+
+      if (
+        payment ===
+          'success' &&
+        orderNumber
+      ) {
+
+        setPaymentOrderNumber(
+          orderNumber
+        );
+
+
+        setPaymentCancelledOrder(
+          null
+        );
+
+
+        window.history.replaceState(
+          {},
+          '',
+          window.location.pathname
+        );
+
+
+        return;
+      }
+
+
+      /* =======================================================
+         PAYMENT CANCELLED
+         ======================================================= */
+
+      if (
+        payment ===
+        'cancelled'
+      ) {
+
+        setPaymentCancelledOrder(
+          orderNumber ||
+          'Pesanan'
+        );
+
+
+        setPaymentOrderNumber(
+          null
+        );
+
+
+        window.history.replaceState(
+          {},
+          '',
+          window.location.pathname
+        );
+      }
+
+    },
+    [
       isAdminPage
-    ) {
-
-      return;
-    }
-
-
-    const params =
-
-      new URLSearchParams(
-        window.location.search
-      );
-
-
-    const payment =
-
-      params.get(
-        'payment'
-      );
-
-
-    const orderNumber =
-
-      params.get(
-        'order'
-      );
-
-
-    /* =======================================================
-       PAYMENT SUCCESS
-       ======================================================= */
-
-    if (
-      payment ===
-      'success'
-    ) {
-
-      alert(
-
-        `Pembayaran berhasil!${
-
-          orderNumber
-
-            ? `\nOrder: ${orderNumber}`
-
-            : ''
-
-        }`
-
-      );
-
-
-      window.history.replaceState(
-
-        {},
-
-        '',
-
-        window.location.pathname
-
-      );
-
-    }
-
-
-    /* =======================================================
-       PAYMENT CANCELLED
-       ======================================================= */
-
-    if (
-      payment ===
-      'cancelled'
-    ) {
-
-      alert(
-
-        `Pembayaran dibatalkan.${
-
-          orderNumber
-
-            ? `\nOrder: ${orderNumber}`
-
-            : ''
-
-        }`
-
-      );
-
-
-      window.history.replaceState(
-
-        {},
-
-        '',
-
-        window.location.pathname
-
-      );
-
-    }
-
-  }, [
-    isAdminPage
-  ]);
+    ]
+  );
 
 
   /* =========================================================
@@ -218,11 +217,6 @@ export default function App() {
   if (
     isAdminPage
   ) {
-
-
-    /* =======================================================
-       ADMIN LOGIN
-       ======================================================= */
 
     if (
       !adminSecret
@@ -244,13 +238,8 @@ export default function App() {
         />
 
       );
-
     }
 
-
-    /* =======================================================
-       ADMIN STOCK
-       ======================================================= */
 
     return (
 
@@ -276,7 +265,6 @@ export default function App() {
       />
 
     );
-
   }
 
 
@@ -299,30 +287,13 @@ export default function App() {
     >
 
 
-      {/* =====================================================
-          NAVBAR
-      ====================================================== */}
-
       <Navbar />
 
 
-      {/* =====================================================
-          MAIN CONTENT
-      ====================================================== */}
-
       <main>
-
-
-        {/* ===================================================
-            1. HERO SECTION
-        ==================================================== */}
 
         <HeroSection />
 
-
-        {/* ===================================================
-            2. MENU SECTION
-        ==================================================== */}
 
         <MenuSection
 
@@ -338,40 +309,19 @@ export default function App() {
         />
 
 
-        {/* ===================================================
-            3. WHY US SECTION
-        ==================================================== */}
-
         <WhyUsSection />
 
-
-        {/* ===================================================
-            4. PAYMENT SECTION
-        ==================================================== */}
 
         <PaymentSection />
 
 
-        {/* ===================================================
-            5. CONTACT SECTION
-        ==================================================== */}
-
         <ContactSection />
-
 
       </main>
 
 
-      {/* =====================================================
-          6. FOOTER
-      ====================================================== */}
-
       <Footer />
 
-
-      {/* =====================================================
-          ORDER MODAL
-      ====================================================== */}
 
       <OrderModal
 
@@ -394,86 +344,242 @@ export default function App() {
 
 
       {/* =====================================================
-          FLOATING WHATSAPP BUTTON
-      ====================================================== */}
+          PAYMENT SUCCESS ORDER STATUS
+          ===================================================== */}
 
-      <a
+      {paymentOrderNumber && (
 
-        href={
-          CONTACT_INFO.whatsappUrl
-        }
+        <OrderStatus
 
-        target="_blank"
+          orderNumber={
+            paymentOrderNumber
+          }
 
-        rel="
-          noopener noreferrer
-        "
+          onClose={() => {
 
-        className="
-          fixed
-          bottom-6
-          right-6
-          z-40
-          p-4
-          rounded-full
-          bg-gradient-to-r
-          from-[#22c55e]
-          to-[#16a34a]
-          hover:from-[#25d366]
-          hover:to-[#15803d]
-          text-white
-          shadow-2xl
-          shadow-emerald-950/60
-          flex
-          items-center
-          gap-2.5
-          hover:scale-110
-          active:scale-95
-          transition-all
-          duration-300
-          border
-          border-emerald-400/30
-          group
-        "
-
-        aria-label="
-          Pesan via WhatsApp
-        "
-
-      >
+            setPaymentOrderNumber(
+              null
+            );
 
 
-        <MessageCircle
-          className="
-            w-6
-            h-6
-            text-white
-            group-hover:rotate-12
-            transition-transform
-          "
+            window.scrollTo({
+              top:
+                0,
+
+              behavior:
+                'smooth'
+            });
+
+          }}
+
         />
 
+      )}
 
-        <span
+
+      {/* =====================================================
+          PAYMENT CANCELLED
+          ===================================================== */}
+
+      {paymentCancelledOrder && (
+
+        <div
           className="
-            hidden
-            sm:inline
-            font-bold
-            text-sm
-            pr-1
+            fixed
+            inset-0
+            z-[100]
+            bg-black/80
+            backdrop-blur-sm
+            flex
+            items-center
+            justify-center
+            px-4
           "
         >
 
-          Pesan Fast-Response
+          <div
+            className="
+              w-full
+              max-w-md
+              rounded-2xl
+              bg-[#13100d]
+              border
+              border-red-500/30
+              p-6
+              text-center
+              shadow-2xl
+            "
+          >
 
-        </span>
+            <div
+              className="
+                w-14
+                h-14
+                rounded-full
+                bg-red-950/40
+                border
+                border-red-500/30
+                flex
+                items-center
+                justify-center
+                mx-auto
+                text-red-300
+                text-2xl
+                font-bold
+              "
+            >
+              !
+            </div>
 
 
-      </a>
+            <h2
+              className="
+                text-2xl
+                font-bold
+                mt-4
+              "
+            >
+              Pembayaran Dibatalkan
+            </h2>
+
+
+            <p
+              className="
+                text-[#ad9f91]
+                mt-2
+              "
+            >
+              Pembayaran untuk
+            </p>
+
+
+            <p
+              className="
+                font-mono
+                text-[#d4af37]
+                font-bold
+                mt-1
+                break-all
+              "
+            >
+              {paymentCancelledOrder}
+            </p>
+
+
+            <button
+              type="button"
+              onClick={() =>
+                setPaymentCancelledOrder(
+                  null
+                )
+              }
+              className="
+                mt-6
+                w-full
+                py-3
+                rounded-xl
+                bg-[#d4af37]
+                hover:bg-[#e2c256]
+                text-black
+                font-bold
+                transition
+              "
+            >
+              Kembali ke Arume
+            </button>
+
+          </div>
+
+        </div>
+
+      )}
+
+
+      {/* =====================================================
+          FLOATING WHATSAPP BUTTON
+          ===================================================== */}
+
+      {!paymentOrderNumber &&
+      !paymentCancelledOrder && (
+
+        <a
+
+          href={
+            CONTACT_INFO.whatsappUrl
+          }
+
+          target="_blank"
+
+          rel="
+            noopener noreferrer
+          "
+
+          className="
+            fixed
+            bottom-6
+            right-6
+            z-40
+            p-4
+            rounded-full
+            bg-gradient-to-r
+            from-[#22c55e]
+            to-[#16a34a]
+            hover:from-[#25d366]
+            hover:to-[#15803d]
+            text-white
+            shadow-2xl
+            shadow-emerald-950/60
+            flex
+            items-center
+            gap-2.5
+            hover:scale-110
+            active:scale-95
+            transition-all
+            duration-300
+            border
+            border-emerald-400/30
+            group
+          "
+
+          aria-label="
+            Pesan via WhatsApp
+          "
+
+        >
+
+
+          <MessageCircle
+            className="
+              w-6
+              h-6
+              text-white
+              group-hover:rotate-12
+              transition-transform
+            "
+          />
+
+
+          <span
+            className="
+              hidden
+              sm:inline
+              font-bold
+              text-sm
+              pr-1
+            "
+          >
+
+            Pesan Fast-Response
+
+          </span>
+
+
+        </a>
+
+      )}
 
 
     </div>
 
   );
-
 }
