@@ -66,6 +66,19 @@ interface ShippingRate {
 
 
 /* =========================================================
+   CUSTOMER PROFILE TYPE
+   ========================================================= */
+
+interface CustomerProfile {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  address: string | null;
+  email: string | null;
+}
+
+
+/* =========================================================
    PROPS
    ========================================================= */
 
@@ -76,6 +89,9 @@ interface OrderModalProps {
 
   storeLocation:
     StoreLocation;
+
+  customerProfile?:
+    CustomerProfile | null;
 
   onClose:
     () => void;
@@ -92,6 +108,8 @@ React.FC<OrderModalProps> = ({
   item,
 
   storeLocation,
+
+  customerProfile,
 
   onClose
 
@@ -167,6 +185,71 @@ React.FC<OrderModalProps> = ({
     useState(
       ''
     );
+
+
+  /* =========================================================
+     AUTO FILL CUSTOMER DATA
+     ========================================================= */
+
+  useEffect(
+    () => {
+
+      if (
+        !customerProfile
+      ) {
+
+        return;
+      }
+
+
+      if (
+        !customerName.trim() &&
+        customerProfile.full_name
+      ) {
+
+        setCustomerName(
+          customerProfile.full_name
+        );
+      }
+
+
+      if (
+        !customerEmail.trim() &&
+        customerProfile.email
+      ) {
+
+        setCustomerEmail(
+          customerProfile.email
+        );
+      }
+
+
+      if (
+        !customerPhone.trim() &&
+        customerProfile.phone
+      ) {
+
+        setCustomerPhone(
+          customerProfile.phone
+        );
+      }
+
+
+      if (
+        !deliveryAddress.trim() &&
+        customerProfile.address
+      ) {
+
+        setDeliveryAddress(
+          customerProfile.address
+        );
+      }
+
+    },
+    [
+      customerProfile
+    ]
+  );
 
 
   /* =========================================================
