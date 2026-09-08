@@ -27,6 +27,10 @@ import {
   XCircle
 } from 'lucide-react';
 
+import {
+  AdminWhatsApp
+} from './AdminWhatsApp';
+
 
 /* =========================================================
    TYPES
@@ -4707,10 +4711,17 @@ export function AdminStock({
           </section>
 
         )}
+{/* WHATSAPP */}
+
+        {activeTab === 'whatsapp' && (
+          <AdminWhatsApp
+            secret={secret}
+          />
+        )}
 
       </main>
 
     </div>
 
   );
-                        }
+}
