@@ -221,99 +221,57 @@ React.FC<CustomerAuthProps> = ({
 
 
   const handleRegister =
-    async () => {
+  async () => {
 
-      resetFeedback();
+    resetFeedback();
 
+    if (
+      !fullName.trim() ||
+      !email.trim() ||
+      !phone.trim() ||
+      !address.trim() ||
+      !password.trim()
+    ) {
 
-      if (
-        !fullName.trim() ||
-        !email.trim() ||
-        !phone.trim() ||
-        !address.trim() ||
-        !password.trim()
-      ) {
-
-        setError(
-          'Semua data wajib diisi.'
-        );
-
-        return;
-      }
-
-
-      if (
-        password.length <
-        6
-      ) {
-
-        setError(
-          'Password minimal 6 karakter.'
-        );
-
-        return;
-      }
-
-
-      setLoading(
-        true
+      setError(
+        'Semua data wajib diisi.'
       );
 
+      return;
+    }
 
-      try {
+    if (
+      password.length < 6
+    ) {
 
-        const {
-          data,
-          error:
-            registerError
-        } =
-          await supabase
-            .auth
-            .signUp({
+      setError(
+        'Password minimal 6 karakter.'
+      );
 
-              email:
-                email.trim(),
+      return;
+    }
 
-              password:
-                password
+    setLoading(
+      true
+    );
 
-            });
+    try {
 
+      const {
+        data,
+        error: registerError
+      } =
+        await supabase.auth.signUp({
 
-        if (
-          registerError
-        ) {
+          email:
+            email.trim(),
 
-          throw registerError;
-        }
+          password:
+            password,
 
+          options: {
 
-        const user =
-          data.user;
-
-
-        if (
-          !user
-        ) {
-
-          throw new Error(
-            'User tidak berhasil dibuat.'
-          );
-        }
-
-
-        const {
-          error:
-            profileError
-        } =
-          await supabase
-            .from(
-              'profiles'
-            )
-            .insert({
-
-              id:
-                user.id,
+            data: {
 
               full_name:
                 fullName.trim(),
@@ -324,62 +282,70 @@ React.FC<CustomerAuthProps> = ({
               address:
                 address.trim()
 
-            });
+            }
 
+          }
 
-        if (
-          profileError
-        ) {
+        });
 
-          throw profileError;
-        }
-
-
-        if (
-          data.session
-        ) {
-
-          setMessage(
-            'Akun berhasil dibuat dan kamu sudah login.'
-          );
-
-
-          setTimeout(
-            () => {
-
-              onClose();
-
-            },
-            800
-          );
-
-
-        } else {
-
-          setMessage(
-            'Akun berhasil dibuat. Silakan cek email untuk konfirmasi akun.'
-          );
-        }
-
-
-      } catch (
-        err:
-        any
+      if (
+        registerError
       ) {
 
-        setError(
-          err?.message ||
-          'Pendaftaran gagal.'
-        );
+        throw registerError;
+      }
 
+      if (
+        !data.user
+      ) {
 
-      } finally {
-
-        setLoading(
-          false
+        throw new Error(
+          'User tidak berhasil dibuat.'
         );
       }
-    };
+
+      if (
+        data.session
+      ) {
+
+        setMessage(
+          'Akun berhasil dibuat dan kamu sudah login.'
+        );
+
+        setTimeout(
+          () => {
+
+            onClose();
+
+          },
+          800
+        );
+
+      } else {
+
+        setMessage(
+          'Akun berhasil dibuat. Silakan cek email untuk konfirmasi akun.'
+        );
+
+      }
+
+    } catch (
+      err: any
+    ) {
+
+      setError(
+        err?.message ||
+        'Pendaftaran gagal.'
+      );
+
+    } finally {
+
+      setLoading(
+        false
+      );
+
+    }
+  };
 
 
   const handleSubmit =
