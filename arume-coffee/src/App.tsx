@@ -12,6 +12,9 @@ import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { OrderModal } from './components/OrderModal';
 import { OrderStatus } from './components/OrderStatus';
+import { CustomerAuth } from './components/CustomerAuth';
+
+import { supabase } from './lib/supabase';
 
 import {
   AdminLogin
@@ -68,6 +71,15 @@ const ACTIVE_ORDER_STORAGE_KEY =
   'arume_active_order';
 
 
+interface CustomerProfile {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+  address: string | null;
+  email: string | null;
+}
+
+
 /* =========================================================
    APP
    ========================================================= */
@@ -80,6 +92,33 @@ export default function App() {
   ] =
     useState<CoffeeMenuItem | null>(
       null
+    );
+
+
+  const [
+    customerAuthOpen,
+    setCustomerAuthOpen
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
+    customerProfile,
+    setCustomerProfile
+  ] =
+    useState<CustomerProfile | null>(
+      null
+    );
+
+
+  const [
+    customerAuthLoading,
+    setCustomerAuthLoading
+  ] =
+    useState(
+      true
     );
 
 
@@ -135,6 +174,291 @@ export default function App() {
     useState<string | null>(
       null
     );
+
+
+  /* =========================================================
+     CUSTOMER AUTH
+     ========================================================= */
+
+  const loadCustomerProfile =
+    async (
+      userId:
+        string,
+      email:
+        string | null
+    ) => {
+
+      const {
+        data,
+        error
+      } =
+        await supabase
+          .from(
+            'profiles'
+          )
+          .select(
+            'id, full_name, phone, address'
+          )
+          .eq(
+            'id',
+            userId
+          )
+          .maybeSingle();
+
+
+      if (
+        error
+      ) {
+
+        console.error(
+          'Load customer profile error:',
+          error
+        );
+
+        setCustomerProfile(
+          {
+            id:
+              userId,
+            full_name:
+              null,
+            phone:
+              null,
+            address:
+              null,
+            email
+          }
+        );
+
+        return;
+      }
+
+
+      setCustomerProfile(
+        {
+          id:
+            userId,
+          full_name:
+            data?.full_name ||
+            null,
+          phone:
+            data?.phone ||
+            null,
+          address:
+            data?.address ||
+            null,
+          email
+        }
+      );
+    };
+
+
+  useEffect(
+    () => {
+
+      if (
+        isAdminPage
+      ) {
+
+        setCustomerAuthLoading(
+          false
+        );
+
+        return;
+      }
+
+
+      let active =
+        true;
+
+
+      const initializeAuth =
+        async () => {
+
+          try {
+
+            const {
+              data
+            } =
+              await supabase
+                .auth
+                .getSession();
+
+
+            if (
+              !active
+            ) {
+
+              return;
+            }
+
+
+            const user =
+              data.session
+                ?.user;
+
+
+            if (
+              user
+            ) {
+
+              await loadCustomerProfile(
+                user.id,
+                user.email ||
+                null
+              );
+
+            } else {
+
+              setCustomerProfile(
+                null
+              );
+            }
+
+          } catch (
+            error
+          ) {
+
+            console.error(
+              'Initialize customer auth error:',
+              error
+            );
+
+            if (
+              active
+            ) {
+
+              setCustomerProfile(
+                null
+              );
+            }
+
+          } finally {
+
+            if (
+              active
+            ) {
+
+              setCustomerAuthLoading(
+                false
+              );
+            }
+          }
+        };
+
+
+      initializeAuth();
+
+
+      const {
+        data:
+          authListener
+      } =
+        supabase
+          .auth
+          .onAuthStateChange(
+            async (
+              _event,
+              session
+            ) => {
+
+              if (
+                !active
+              ) {
+
+                return;
+              }
+
+
+              const user =
+                session
+                  ?.user;
+
+
+              if (
+                user
+              ) {
+
+                await loadCustomerProfile(
+                  user.id,
+                  user.email ||
+                  null
+                );
+
+              } else {
+
+                setCustomerProfile(
+                  null
+                );
+              }
+
+
+              setCustomerAuthLoading(
+                false
+              );
+            }
+          );
+
+
+      return () => {
+
+        active =
+          false;
+
+
+        authListener
+          .subscription
+          .unsubscribe();
+      };
+
+    },
+    [
+      isAdminPage
+    ]
+  );
+
+
+  const handleCustomerLogout =
+    async () => {
+
+      try {
+
+        const {
+          error
+        } =
+          await supabase
+            .auth
+            .signOut();
+
+
+        if (
+          error
+        ) {
+
+          throw error;
+        }
+
+
+        setCustomerProfile(
+          null
+        );
+
+      } catch (
+        error:
+        any
+      ) {
+
+        console.error(
+          'Customer logout error:',
+          error
+        );
+
+
+        alert(
+          error?.message ||
+          'Gagal keluar dari akun.'
+        );
+      }
+    };
 
 
   /* =========================================================
@@ -387,7 +711,29 @@ export default function App() {
     >
 
 
-      <Navbar />
+      <Navbar
+        customerName={
+          customerAuthLoading
+            ? null
+            : customerProfile
+                ?.full_name ||
+              customerProfile
+                ?.email ||
+              null
+        }
+
+        onOpenAuth={() => {
+
+          setCustomerAuthOpen(
+            true
+          );
+
+        }}
+
+        onLogout={
+          handleCustomerLogout
+        }
+      />
 
 
       <main>
@@ -422,6 +768,23 @@ export default function App() {
 
 
       <Footer />
+
+
+      <CustomerAuth
+
+        open={
+          customerAuthOpen
+        }
+
+        onClose={() => {
+
+          setCustomerAuthOpen(
+            false
+          );
+
+        }}
+
+      />
 
 
       {/* =====================================================
