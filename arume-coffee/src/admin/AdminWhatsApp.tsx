@@ -1,6 +1,7 @@
 // src/admin/AdminWhatsApp.tsx
 
 import React, {
+  useEffect,
   useMemo,
   useState
 } from 'react';
@@ -48,10 +49,108 @@ type ChatMessage = {
   createdAt: string;
 
   status?:
+    | 'received'
     | 'sent'
     | 'delivered'
-    | 'read';
+    | 'read'
+    | 'failed';
 };
+
+
+type ApiConversation = {
+  id: string;
+  customer_name?: string | null;
+  phone_number: string;
+  last_message?: string | null;
+  last_message_at?: string | null;
+  unread_count?: number | null;
+};
+
+
+type ApiMessage = {
+  id: string;
+  whatsapp_message_id?: string | null;
+  phone_number: string;
+  direction: 'incoming' | 'outgoing';
+  message_text?: string | null;
+  status?: 'received' | 'sent' | 'delivered' | 'read' | 'failed';
+  created_at: string;
+};
+
+
+const API_BASE_URL =
+  'https://arume-coffee-api-2.diyanaxl.workers.dev';
+
+
+const normalizeConversation = (
+  item: ApiConversation
+): Conversation => ({
+  id:
+    String(
+      item.id
+    ),
+
+  customerName:
+    String(
+      item.customer_name ||
+      item.phone_number ||
+      'Customer'
+    ),
+
+  phone:
+    String(
+      item.phone_number ||
+      ''
+    ),
+
+  lastMessage:
+    String(
+      item.last_message ||
+      ''
+    ),
+
+  lastMessageAt:
+    String(
+      item.last_message_at ||
+      ''
+    ),
+
+  unread:
+    Number(
+      item.unread_count ||
+      0
+    )
+});
+
+
+const normalizeMessage = (
+  item: ApiMessage
+): ChatMessage => ({
+  id:
+    String(
+      item.id ||
+      item.whatsapp_message_id ||
+      crypto.randomUUID()
+    ),
+
+  direction:
+    item.direction,
+
+  message:
+    String(
+      item.message_text ||
+      ''
+    ),
+
+  createdAt:
+    String(
+      item.created_at ||
+      ''
+    ),
+
+  status:
+    item.status
+});
 
 
 /* =========================================================
@@ -194,7 +293,8 @@ export function AdminWhatsApp({
 
 
   const [
-    messages
+    messages,
+    setMessages
   ] =
     useState<
       Record<
@@ -239,6 +339,24 @@ export function AdminWhatsApp({
   ] =
     useState(
       false
+    );
+
+
+  const [
+    sending,
+    setSending
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
+    error,
+    setError
+  ] =
+    useState(
+      ''
     );
 
 
@@ -333,11 +451,396 @@ export function AdminWhatsApp({
 
 
   /* =========================================================
+     API HELPERS
+     ========================================================= */
+
+  const getAdminHeaders =
+    (
+      includeJson =
+        false
+    ) => {
+
+      const headers:
+        Record<string, string> = {
+          'X-ADMIN-SECRET':
+            secret
+        };
+
+
+      if (
+        includeJson
+      ) {
+
+        headers[
+          'Content-Type'
+        ] =
+          'application/json';
+      }
+
+
+      return headers;
+    };
+
+
+  const getErrorMessage =
+    (
+      result:
+        any,
+      fallback:
+        string
+    ) => {
+
+      return (
+        result?.message ||
+        result?.error ||
+        result?.details ||
+        fallback
+      );
+    };
+
+
+  /* =========================================================
+     LOAD CONVERSATIONS
+     ========================================================= */
+
+  const loadConversations =
+    async (
+      silent =
+        false
+    ) => {
+
+      if (
+        !secret
+      ) {
+
+        return;
+      }
+
+
+      if (
+        !silent
+      ) {
+
+        setRefreshing(
+          true
+        );
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/admin/whatsapp/conversations`,
+            {
+              headers:
+                getAdminHeaders()
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (
+          !response.ok
+        ) {
+
+          throw new Error(
+            getErrorMessage(
+              result,
+              'Gagal mengambil percakapan WhatsApp.'
+            )
+          );
+        }
+
+
+        const rawConversations =
+          result?.data?.conversations ||
+          result?.conversations ||
+          [];
+
+
+        const normalized =
+          Array.isArray(
+            rawConversations
+          )
+            ? rawConversations.map(
+                (
+                  item:
+                    ApiConversation
+                ) =>
+                  normalizeConversation(
+                    item
+                  )
+              )
+            : [];
+
+
+        setConversations(
+          normalized
+        );
+
+
+        setError(
+          ''
+        );
+
+
+        if (
+          selectedConversationId &&
+          !normalized.some(
+            item =>
+              item.id ===
+              selectedConversationId
+          )
+        ) {
+
+          setSelectedConversationId(
+            null
+          );
+        }
+
+
+      } catch (
+        err:
+          any
+      ) {
+
+        console.error(
+          'Load WhatsApp conversations error:',
+          err
+        );
+
+
+        if (
+          !silent
+        ) {
+
+          setError(
+            err?.message ||
+            'Gagal mengambil percakapan WhatsApp.'
+          );
+        }
+
+
+      } finally {
+
+        if (
+          !silent
+        ) {
+
+          setRefreshing(
+            false
+          );
+        }
+      }
+    };
+
+
+  /* =========================================================
+     LOAD MESSAGES
+     ========================================================= */
+
+  const loadMessages =
+    async (
+      conversation:
+        Conversation,
+      silent =
+        false
+    ) => {
+
+      if (
+        !secret ||
+        !conversation?.phone
+      ) {
+
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/admin/whatsapp/conversations/${encodeURIComponent(
+              conversation.phone
+            )}/messages`,
+            {
+              headers:
+                getAdminHeaders()
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (
+          !response.ok
+        ) {
+
+          throw new Error(
+            getErrorMessage(
+              result,
+              'Gagal mengambil pesan WhatsApp.'
+            )
+          );
+        }
+
+
+        const rawMessages =
+          result?.data?.messages ||
+          result?.messages ||
+          [];
+
+
+        const normalized =
+          Array.isArray(
+            rawMessages
+          )
+            ? rawMessages.map(
+                (
+                  item:
+                    ApiMessage
+                ) =>
+                  normalizeMessage(
+                    item
+                  )
+              )
+            : [];
+
+
+        setMessages(
+          current => ({
+            ...current,
+
+            [
+              conversation.id
+            ]:
+              normalized
+          })
+        );
+
+
+        setError(
+          ''
+        );
+
+
+      } catch (
+        err:
+          any
+      ) {
+
+        console.error(
+          'Load WhatsApp messages error:',
+          err
+        );
+
+
+        if (
+          !silent
+        ) {
+
+          setError(
+            err?.message ||
+            'Gagal mengambil pesan WhatsApp.'
+          );
+        }
+      }
+    };
+
+
+  /* =========================================================
+     MARK READ
+     ========================================================= */
+
+  const markConversationRead =
+    async (
+      conversation:
+        Conversation
+    ) => {
+
+      if (
+        !secret ||
+        !conversation?.phone
+      ) {
+
+        return;
+      }
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/admin/whatsapp/conversations/${encodeURIComponent(
+              conversation.phone
+            )}/read`,
+            {
+              method:
+                'PATCH',
+
+              headers:
+                getAdminHeaders()
+            }
+          );
+
+
+        if (
+          !response.ok
+        ) {
+
+          const result =
+            await response.json();
+
+          throw new Error(
+            getErrorMessage(
+              result,
+              'Gagal menandai pesan sebagai dibaca.'
+            )
+          );
+        }
+
+
+        setConversations(
+          current =>
+            current.map(
+              item =>
+                item.id ===
+                conversation.id
+                  ? {
+                      ...item,
+
+                      unread:
+                        0
+                    }
+                  : item
+            )
+        );
+
+
+      } catch (
+        err
+      ) {
+
+        console.error(
+          'Mark WhatsApp read error:',
+          err
+        );
+      }
+    };
+
+
+  /* =========================================================
      SELECT CONVERSATION
      ========================================================= */
 
   const selectConversation =
-    (
+    async (
       conversation:
         Conversation
     ) => {
@@ -347,35 +850,20 @@ export function AdminWhatsApp({
       );
 
 
-      /*
-       * Untuk sementara kita nol-kan unread
-       * secara lokal.
-       *
-       * Nanti backend akan update status read.
-       */
+      await Promise.all([
+        loadMessages(
+          conversation
+        ),
 
-      setConversations(
-        current =>
-          current.map(
-            item =>
-              item.id ===
-              conversation.id
-                ? {
-                    ...item,
-                    unread:
-                      0
-                  }
-                : item
-          )
-      );
+        markConversationRead(
+          conversation
+        )
+      ]);
     };
 
 
   /* =========================================================
      REFRESH
-
-     Belum hit API.
-     Nanti akan diganti load conversations dari Worker.
      ========================================================= */
 
   const handleRefresh =
@@ -396,34 +884,35 @@ export function AdminWhatsApp({
 
       try {
 
-        /*
-         * Placeholder.
-         *
-         * Nanti:
-         *
-         * GET /api/admin/whatsapp/conversations
-         *
-         * headers:
-         * X-ADMIN-SECRET: secret
-         */
-
-        await new Promise(
-          resolve =>
-            window.setTimeout(
-              resolve,
-              500
-            )
+        await loadConversations(
+          true
         );
 
 
-        console.log(
-          'WhatsApp refresh placeholder',
-          {
-            authenticated:
-              Boolean(
-                secret
-              )
-          }
+        if (
+          selectedConversation
+        ) {
+
+          await loadMessages(
+            selectedConversation,
+            true
+          );
+        }
+
+
+        setError(
+          ''
+        );
+
+
+      } catch (
+        err:
+          any
+      ) {
+
+        setError(
+          err?.message ||
+          'Gagal refresh WhatsApp.'
         );
 
 
@@ -438,13 +927,10 @@ export function AdminWhatsApp({
 
   /* =========================================================
      SEND MESSAGE
-
-     Sengaja belum mengirim ke Meta.
-     Backend belum tersedia.
      ========================================================= */
 
   const handleSendMessage =
-    () => {
+    async () => {
 
       const normalized =
         messageInput
@@ -453,6 +939,167 @@ export function AdminWhatsApp({
 
       if (
         !normalized ||
+        !selectedConversation ||
+        sending
+      ) {
+
+        return;
+      }
+
+
+      setSending(
+        true
+      );
+
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/admin/whatsapp/send`,
+            {
+              method:
+                'POST',
+
+              headers:
+                getAdminHeaders(
+                  true
+                ),
+
+              body:
+                JSON.stringify({
+                  phone_number:
+                    selectedConversation.phone,
+
+                  message_text:
+                    normalized
+                })
+            }
+          );
+
+
+        const result =
+          await response.json();
+
+
+        if (
+          !response.ok
+        ) {
+
+          throw new Error(
+            getErrorMessage(
+              result,
+              'Gagal mengirim pesan WhatsApp.'
+            )
+          );
+        }
+
+
+        setMessageInput(
+          ''
+        );
+
+
+        await Promise.all([
+          loadMessages(
+            selectedConversation,
+            true
+          ),
+
+          loadConversations(
+            true
+          )
+        ]);
+
+
+        setError(
+          ''
+        );
+
+
+      } catch (
+        err:
+          any
+      ) {
+
+        console.error(
+          'Send WhatsApp message error:',
+          err
+        );
+
+
+        const message =
+          err?.message ||
+          'Gagal mengirim pesan WhatsApp.';
+
+
+        setError(
+          message
+        );
+
+
+        window.alert(
+          message
+        );
+
+
+      } finally {
+
+        setSending(
+          false
+        );
+      }
+    };
+
+
+  /* =========================================================
+     INITIAL LOAD + POLLING
+     ========================================================= */
+
+  useEffect(
+    () => {
+
+      if (
+        !secret
+      ) {
+
+        return;
+      }
+
+
+      void loadConversations();
+
+
+      const timer =
+        window.setInterval(
+          () => {
+
+            void loadConversations(
+              true
+            );
+          },
+          5000
+        );
+
+
+      return () => {
+
+        window.clearInterval(
+          timer
+        );
+      };
+
+    },
+    [
+      secret
+    ]
+  );
+
+
+  useEffect(
+    () => {
+
+      if (
         !selectedConversation
       ) {
 
@@ -460,10 +1107,42 @@ export function AdminWhatsApp({
       }
 
 
-      window.alert(
-        'Backend WhatsApp belum tersambung. Setelah webhook dan Cloud API selesai dibuat, tombol Kirim akan aktif.'
+      const conversation =
+        selectedConversation;
+
+
+      void loadMessages(
+        conversation,
+        true
       );
-    };
+
+
+      const timer =
+        window.setInterval(
+          () => {
+
+            void loadMessages(
+              conversation,
+              true
+            );
+          },
+          3000
+        );
+
+
+      return () => {
+
+        window.clearInterval(
+          timer
+        );
+      };
+
+    },
+    [
+      selectedConversation?.id,
+      selectedConversation?.phone
+    ]
+  );
 
 
   /* =========================================================
@@ -548,7 +1227,7 @@ export function AdminWhatsApp({
               "
             />
 
-            Menunggu Meta
+            Webhook Aktif
 
           </div>
 
@@ -598,6 +1277,25 @@ export function AdminWhatsApp({
         </div>
 
       </div>
+
+
+      {error && (
+        <div
+          className="
+            mb-4
+            rounded-xl
+            border
+            border-red-500/30
+            bg-red-950/20
+            px-4
+            py-3
+            text-sm
+            text-red-300
+          "
+        >
+          {error}
+        </div>
+      )}
 
 
       {/* =====================================================
@@ -1092,10 +1790,9 @@ export function AdminWhatsApp({
                       mt-3
                     "
                   >
-                    Chat customer Arume Coffee
-                    akan muncul di sini setelah
-                    WhatsApp Cloud API dan webhook
-                    tersambung.
+                    Pilih percakapan customer di sebelah kiri
+                    untuk membaca dan membalas pesan
+                    WhatsApp dari admin Arume Coffee.
                   </p>
 
 
@@ -1133,7 +1830,7 @@ export function AdminWhatsApp({
                           font-bold
                         "
                       >
-                        Menunggu aktivasi Meta
+                        Webhook aktif
                       </span>
 
                     </div>
@@ -1537,7 +2234,8 @@ export function AdminWhatsApp({
                       }
 
                       disabled={
-                        !messageInput.trim()
+                        !messageInput.trim() ||
+                        sending
                       }
 
                       className="
