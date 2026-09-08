@@ -86,6 +86,14 @@ interface CustomerProfile {
 
 export default function App() {
 
+  const isAdminPage =
+
+    window.location.pathname ===
+      '/admin' ||
+
+    window.location.pathname ===
+      '/admin/';
+  
   const [
     selectedItem,
     setSelectedItem
@@ -460,18 +468,6 @@ export default function App() {
       }
     };
 
-
-  /* =========================================================
-     ADMIN PAGE CHECK
-     ========================================================= */
-
-  const isAdminPage =
-
-    window.location.pathname ===
-      '/admin' ||
-
-    window.location.pathname ===
-      '/admin/';
 
 
   /* =========================================================
