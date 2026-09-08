@@ -800,6 +800,9 @@ export default function App() {
         storeLocation={
           STORE_LOCATION
         }
+        customerProfile={
+           customerProfile
+        }
 
         onClose={() => {
 
