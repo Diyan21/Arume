@@ -198,52 +198,48 @@ React.FC<OrderModalProps> = ({
         !customerProfile
       ) {
 
+        setCustomerName(
+          ''
+        );
+
+        setCustomerEmail(
+          ''
+        );
+
+        setCustomerPhone(
+          ''
+        );
+
+        setDeliveryAddress(
+          ''
+        );
+
         return;
       }
 
 
-      if (
-        !customerName.trim() &&
-        customerProfile.full_name
-      ) {
-
-        setCustomerName(
-          customerProfile.full_name
-        );
-      }
+      setCustomerName(
+        customerProfile.full_name ||
+        ''
+      );
 
 
-      if (
-        !customerEmail.trim() &&
-        customerProfile.email
-      ) {
-
-        setCustomerEmail(
-          customerProfile.email
-        );
-      }
+      setCustomerEmail(
+        customerProfile.email ||
+        ''
+      );
 
 
-      if (
-        !customerPhone.trim() &&
-        customerProfile.phone
-      ) {
-
-        setCustomerPhone(
-          customerProfile.phone
-        );
-      }
+      setCustomerPhone(
+        customerProfile.phone ||
+        ''
+      );
 
 
-      if (
-        !deliveryAddress.trim() &&
-        customerProfile.address
-      ) {
-
-        setDeliveryAddress(
-          customerProfile.address
-        );
-      }
+      setDeliveryAddress(
+        customerProfile.address ||
+        ''
+      );
 
     },
     [
