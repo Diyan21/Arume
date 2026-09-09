@@ -367,77 +367,89 @@ React.FC<CustomerAuthProps> = ({
          SEND WELCOME EMAIL
          ===================================================== */
 
-      try {
+      if (
+        data.session?.access_token
+      ) {
 
-        const response =
-          await fetch(
-            'https://arume-coffee-api-2.diyanaxl.workers.dev/api/auth/welcome-email',
-            {
+        try {
 
-              method:
-                'POST',
+          const response =
+            await fetch(
+              'https://arume-coffee-api-2.diyanaxl.workers.dev/api/auth/welcome-email',
+              {
 
-              headers: {
+                method:
+                  'POST',
 
-                'Content-Type':
-                  'application/json'
+                headers: {
 
-              },
+                  'Content-Type':
+                    'application/json',
 
-              body:
-                JSON.stringify({
+                  Authorization:
+                    `Bearer ${data.session.access_token}`
 
-                  name:
-                    normalizedName,
+                },
 
-                  email:
-                    normalizedEmail
+                body:
+                  JSON.stringify({
 
-                })
+                    name:
+                      normalizedName
 
-            }
-          );
+                  })
 
-
-        const result =
-          await response
-            .json()
-            .catch(
-              () => null
+              }
             );
 
 
-        if (
-          !response.ok
+          const result =
+            await response
+              .json()
+              .catch(
+                () => null
+              );
+
+
+          if (
+            !response.ok
+          ) {
+
+            console.error(
+              'Welcome email gagal:',
+              result
+            );
+
+          } else {
+
+            console.log(
+              'Welcome email API berhasil:',
+              result
+            );
+
+          }
+
+
+        } catch (
+          emailError
         ) {
 
+          /*
+           * Welcome email tidak boleh membuat
+           * proses registrasi customer gagal.
+           */
+
           console.error(
-            'Welcome email gagal:',
-            result
-          );
-
-        } else {
-
-          console.log(
-            'Welcome email API berhasil:',
-            result
+            'Welcome email API error:',
+            emailError
           );
 
         }
 
+      } else {
 
-      } catch (
-        emailError
-      ) {
-
-        /*
-         * Welcome email tidak boleh membuat
-         * proses registrasi customer gagal.
-         */
-
-        console.error(
-          'Welcome email API error:',
-          emailError
+        console.warn(
+          'Welcome email tidak dikirim karena session Supabase tidak tersedia.'
         );
 
       }
@@ -467,13 +479,8 @@ React.FC<CustomerAuthProps> = ({
 
       } else {
 
-        /*
-         * Jika Email Confirmation Supabase aktif,
-         * customer perlu konfirmasi email terlebih dahulu.
-         */
-
         setMessage(
-          'Pendaftaran berhasil. Silakan cek email untuk konfirmasi akun.'
+          'Pendaftaran berhasil, tetapi sesi login belum tersedia. Silakan masuk menggunakan akun kamu.'
         );
 
       }
