@@ -241,7 +241,7 @@ React.FC<CustomerAuthProps> = ({
   };
 
 
-  /* =========================================================
+   /* =========================================================
      REGISTER
      ========================================================= */
 
@@ -255,11 +255,26 @@ React.FC<CustomerAuthProps> = ({
        VALIDATION
        ======================================================= */
 
+    const normalizedName =
+      fullName.trim();
+
+    const normalizedEmail =
+      email
+        .trim()
+        .toLowerCase();
+
+    const normalizedPhone =
+      phone.trim();
+
+    const normalizedAddress =
+      address.trim();
+
+
     if (
-      !fullName.trim() ||
-      !email.trim() ||
-      !phone.trim() ||
-      !address.trim() ||
+      !normalizedName ||
+      !normalizedEmail ||
+      !normalizedPhone ||
+      !normalizedAddress ||
       !password.trim()
     ) {
 
@@ -305,9 +320,7 @@ React.FC<CustomerAuthProps> = ({
           .signUp({
 
             email:
-              email
-                .trim()
-                .toLowerCase(),
+              normalizedEmail,
 
             password:
               password,
@@ -317,13 +330,13 @@ React.FC<CustomerAuthProps> = ({
               data: {
 
                 full_name:
-                  fullName.trim(),
+                  normalizedName,
 
                 phone:
-                  phone.trim(),
+                  normalizedPhone,
 
                 address:
-                  address.trim()
+                  normalizedAddress
 
               }
 
@@ -347,6 +360,86 @@ React.FC<CustomerAuthProps> = ({
         throw new Error(
           'User tidak berhasil dibuat.'
         );
+      }
+
+
+      /* =====================================================
+         SEND WELCOME EMAIL
+         ===================================================== */
+
+      try {
+
+        const response =
+          await fetch(
+            'https://arume-coffee-api-2.diyanaxl.workers.dev/api/auth/welcome-email',
+            {
+
+              method:
+                'POST',
+
+              headers: {
+
+                'Content-Type':
+                  'application/json'
+
+              },
+
+              body:
+                JSON.stringify({
+
+                  name:
+                    normalizedName,
+
+                  email:
+                    normalizedEmail
+
+                })
+
+            }
+          );
+
+
+        const result =
+          await response
+            .json()
+            .catch(
+              () => null
+            );
+
+
+        if (
+          !response.ok
+        ) {
+
+          console.error(
+            'Welcome email gagal:',
+            result
+          );
+
+        } else {
+
+          console.log(
+            'Welcome email API berhasil:',
+            result
+          );
+
+        }
+
+
+      } catch (
+        emailError
+      ) {
+
+        /*
+         * Welcome email tidak boleh membuat
+         * proses registrasi customer gagal.
+         */
+
+        console.error(
+          'Welcome email API error:',
+          emailError
+        );
+
       }
 
 
@@ -375,9 +468,8 @@ React.FC<CustomerAuthProps> = ({
       } else {
 
         /*
-         * Kalau Email Confirmation Supabase aktif,
-         * session belum diberikan sampai customer
-         * melakukan konfirmasi email.
+         * Jika Email Confirmation Supabase aktif,
+         * customer perlu konfirmasi email terlebih dahulu.
          */
 
         setMessage(
@@ -388,7 +480,7 @@ React.FC<CustomerAuthProps> = ({
 
 
       /* =====================================================
-         CLEAR REGISTER DATA
+         CLEAR REGISTER FORM
          ===================================================== */
 
       setFullName(
@@ -434,6 +526,7 @@ React.FC<CustomerAuthProps> = ({
 
         errorMessage =
           'Email ini sudah terdaftar. Silakan masuk menggunakan akun kamu.';
+
       }
 
 
@@ -449,6 +542,7 @@ React.FC<CustomerAuthProps> = ({
       );
 
     }
+
   };
 
 
@@ -465,8 +559,6 @@ React.FC<CustomerAuthProps> = ({
     e.preventDefault();
 
 
-    /* LOGIN */
-
     if (
       mode ===
       'login'
@@ -475,14 +567,14 @@ React.FC<CustomerAuthProps> = ({
       await handleLogin();
 
       return;
+
     }
 
 
-    /* REGISTER */
-
     await handleRegister();
-  };
 
+  };
+      
 
   /* =========================================================
      DON'T RENDER WHEN CLOSED
