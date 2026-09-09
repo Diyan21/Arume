@@ -29,6 +29,10 @@ React.FC<CustomerAuthProps> = ({
   onClose
 }) => {
 
+  /* =========================================================
+     MODE
+     ========================================================= */
+
   const [
     mode,
     setMode
@@ -40,6 +44,10 @@ React.FC<CustomerAuthProps> = ({
       'login'
     );
 
+
+  /* =========================================================
+     FORM STATE
+     ========================================================= */
 
   const [
     fullName,
@@ -86,6 +94,10 @@ React.FC<CustomerAuthProps> = ({
     );
 
 
+  /* =========================================================
+     UI STATE
+     ========================================================= */
+
   const [
     loading,
     setLoading
@@ -113,13 +125,9 @@ React.FC<CustomerAuthProps> = ({
     );
 
 
-  if (
-    !open
-  ) {
-
-    return null;
-  }
-
+  /* =========================================================
+     RESET FEEDBACK
+     ========================================================= */
 
   const resetFeedback =
     () => {
@@ -134,96 +142,118 @@ React.FC<CustomerAuthProps> = ({
     };
 
 
-  const handleLogin =
-    async () => {
+  /* =========================================================
+     LOGIN
+     ========================================================= */
 
-      resetFeedback();
+  const handleLogin =
+  async () => {
+
+    resetFeedback();
+
+
+    if (
+      !email.trim() ||
+      !password.trim()
+    ) {
+
+      setError(
+        'Email dan password wajib diisi.'
+      );
+
+      return;
+    }
+
+
+    setLoading(
+      true
+    );
+
+
+    try {
+
+      const {
+        error:
+          loginError
+      } =
+        await supabase
+          .auth
+          .signInWithPassword({
+
+            email:
+              email
+                .trim()
+                .toLowerCase(),
+
+            password:
+              password
+
+          });
 
 
       if (
-        !email.trim() ||
-        !password.trim()
+        loginError
       ) {
 
-        setError(
-          'Email dan password wajib diisi.'
-        );
-
-        return;
+        throw loginError;
       }
 
 
-      setLoading(
-        true
+      setMessage(
+        'Login berhasil.'
       );
 
 
-      try {
+      setTimeout(
+        () => {
 
-        const {
-          error:
-            loginError
-        } =
-          await supabase
-            .auth
-            .signInWithPassword({
+          onClose();
 
-              email:
-                email.trim(),
-
-              password:
-                password
-
-            });
+        },
+        600
+      );
 
 
-        if (
-          loginError
-        ) {
-
-          throw loginError;
-        }
-
-
-        setMessage(
-          'Login berhasil.'
-        );
-
-
-        setTimeout(
-          () => {
-
-            onClose();
-
-          },
-          600
-        );
-
-
-      } catch (
-        err:
+    } catch (
+      err:
         any
-      ) {
+    ) {
 
-        setError(
-          err?.message ||
-          'Login gagal.'
-        );
+      console.error(
+        'Login error:',
+        err
+      );
 
 
-      } finally {
+      setError(
+        err?.message ||
+        'Login gagal.'
+      );
 
-        setLoading(
-          false
-        );
-      }
-    };
 
+    } finally {
+
+      setLoading(
+        false
+      );
+
+    }
+  };
+
+
+  /* =========================================================
+     REGISTER
+     ========================================================= */
 
   const handleRegister =
   async () => {
 
     resetFeedback();
+
+
+    /* =======================================================
+       VALIDATION
+       ======================================================= */
 
     if (
       !fullName.trim() ||
@@ -240,8 +270,10 @@ React.FC<CustomerAuthProps> = ({
       return;
     }
 
+
     if (
-      password.length < 6
+      password.length <
+      6
     ) {
 
       setError(
@@ -251,42 +283,54 @@ React.FC<CustomerAuthProps> = ({
       return;
     }
 
+
     setLoading(
       true
     );
 
+
     try {
+
+      /* =====================================================
+         CREATE CUSTOMER IN SUPABASE AUTH
+         ===================================================== */
 
       const {
         data,
-        error: registerError
+        error:
+          registerError
       } =
-        await supabase.auth.signUp({
+        await supabase
+          .auth
+          .signUp({
 
-          email:
-            email.trim(),
+            email:
+              email
+                .trim()
+                .toLowerCase(),
 
-          password:
-            password,
+            password:
+              password,
 
-          options: {
+            options: {
 
-            data: {
+              data: {
 
-              full_name:
-                fullName.trim(),
+                full_name:
+                  fullName.trim(),
 
-              phone:
-                phone.trim(),
+                phone:
+                  phone.trim(),
 
-              address:
-                address.trim()
+                address:
+                  address.trim()
+
+              }
 
             }
 
-          }
+          });
 
-        });
 
       if (
         registerError
@@ -294,6 +338,7 @@ React.FC<CustomerAuthProps> = ({
 
         throw registerError;
       }
+
 
       if (
         !data.user
@@ -304,13 +349,19 @@ React.FC<CustomerAuthProps> = ({
         );
       }
 
+
+      /* =====================================================
+         REGISTER SUCCESS
+         ===================================================== */
+
       if (
         data.session
       ) {
 
         setMessage(
-          'Akun berhasil dibuat dan kamu sudah login.'
+          'Pendaftaran berhasil. Selamat datang di Arume Coffee!'
         );
+
 
         setTimeout(
           () => {
@@ -318,25 +369,78 @@ React.FC<CustomerAuthProps> = ({
             onClose();
 
           },
-          800
+          1000
         );
 
       } else {
 
+        /*
+         * Kalau Email Confirmation Supabase aktif,
+         * session belum diberikan sampai customer
+         * melakukan konfirmasi email.
+         */
+
         setMessage(
-          'Akun berhasil dibuat. Silakan cek email untuk konfirmasi akun.'
+          'Pendaftaran berhasil. Silakan cek email untuk konfirmasi akun.'
         );
 
       }
 
+
+      /* =====================================================
+         CLEAR REGISTER DATA
+         ===================================================== */
+
+      setFullName(
+        ''
+      );
+
+      setPhone(
+        ''
+      );
+
+      setAddress(
+        ''
+      );
+
+      setPassword(
+        ''
+      );
+
+
     } catch (
-      err: any
+      err:
+        any
     ) {
 
-      setError(
-        err?.message ||
-        'Pendaftaran gagal.'
+      console.error(
+        'Register error:',
+        err
       );
+
+
+      let errorMessage =
+        err?.message ||
+        'Pendaftaran gagal.';
+
+
+      if (
+        errorMessage
+          .toLowerCase()
+          .includes(
+            'already registered'
+          )
+      ) {
+
+        errorMessage =
+          'Email ini sudah terdaftar. Silakan masuk menggunakan akun kamu.';
+      }
+
+
+      setError(
+        errorMessage
+      );
+
 
     } finally {
 
@@ -348,29 +452,53 @@ React.FC<CustomerAuthProps> = ({
   };
 
 
+  /* =========================================================
+     FORM SUBMIT
+     ========================================================= */
+
   const handleSubmit =
-    async (
-      e:
+  async (
+    e:
       React.FormEvent
-    ) => {
+  ) => {
 
-      e.preventDefault();
-
-
-      if (
-        mode ===
-        'login'
-      ) {
-
-        await handleLogin();
-
-        return;
-      }
+    e.preventDefault();
 
 
-      await handleRegister();
-    };
+    /* LOGIN */
 
+    if (
+      mode ===
+      'login'
+    ) {
+
+      await handleLogin();
+
+      return;
+    }
+
+
+    /* REGISTER */
+
+    await handleRegister();
+  };
+
+
+  /* =========================================================
+     DON'T RENDER WHEN CLOSED
+     ========================================================= */
+
+  if (
+    !open
+  ) {
+
+    return null;
+  }
+
+
+  /* =========================================================
+     UI
+     ========================================================= */
 
   return (
 
@@ -401,6 +529,10 @@ React.FC<CustomerAuthProps> = ({
           overflow-hidden
         "
       >
+
+        {/* ===================================================
+            HEADER
+            =================================================== */}
 
         <div
           className="
@@ -484,6 +616,10 @@ React.FC<CustomerAuthProps> = ({
         </div>
 
 
+        {/* ===================================================
+            FORM
+            =================================================== */}
+
         <form
           onSubmit={
             handleSubmit
@@ -494,11 +630,17 @@ React.FC<CustomerAuthProps> = ({
           "
         >
 
+          {/* =================================================
+              REGISTER ONLY FIELDS
+              ================================================= */}
+
           {
             mode ===
             'register' && (
 
               <>
+
+                {/* NAME */}
 
                 <div
                   className="
@@ -532,6 +674,7 @@ React.FC<CustomerAuthProps> = ({
                     disabled={
                       loading
                     }
+                    autoComplete="name"
                     className="
                       w-full
                       pl-10
@@ -550,6 +693,8 @@ React.FC<CustomerAuthProps> = ({
 
                 </div>
 
+
+                {/* PHONE */}
 
                 <div
                   className="
@@ -583,6 +728,7 @@ React.FC<CustomerAuthProps> = ({
                     disabled={
                       loading
                     }
+                    autoComplete="tel"
                     className="
                       w-full
                       pl-10
@@ -601,6 +747,8 @@ React.FC<CustomerAuthProps> = ({
 
                 </div>
 
+
+                {/* ADDRESS */}
 
                 <div
                   className="
@@ -636,6 +784,7 @@ React.FC<CustomerAuthProps> = ({
                     rows={
                       3
                     }
+                    autoComplete="street-address"
                     className="
                       w-full
                       pl-10
@@ -660,6 +809,10 @@ React.FC<CustomerAuthProps> = ({
             )
           }
 
+
+          {/* =================================================
+              EMAIL
+              ================================================= */}
 
           <div
             className="
@@ -693,6 +846,7 @@ React.FC<CustomerAuthProps> = ({
               disabled={
                 loading
               }
+              autoComplete="email"
               className="
                 w-full
                 pl-10
@@ -711,6 +865,10 @@ React.FC<CustomerAuthProps> = ({
 
           </div>
 
+
+          {/* =================================================
+              PASSWORD
+              ================================================= */}
 
           <div
             className="
@@ -744,6 +902,12 @@ React.FC<CustomerAuthProps> = ({
               disabled={
                 loading
               }
+              autoComplete={
+                mode ===
+                'login'
+                  ? 'current-password'
+                  : 'new-password'
+              }
               className="
                 w-full
                 pl-10
@@ -762,6 +926,10 @@ React.FC<CustomerAuthProps> = ({
 
           </div>
 
+
+          {/* =================================================
+              ERROR
+              ================================================= */}
 
           {
             error && (
@@ -785,6 +953,10 @@ React.FC<CustomerAuthProps> = ({
           }
 
 
+          {/* =================================================
+              SUCCESS
+              ================================================= */}
+
           {
             message && (
 
@@ -806,6 +978,10 @@ React.FC<CustomerAuthProps> = ({
             )
           }
 
+
+          {/* =================================================
+              SUBMIT
+              ================================================= */}
 
           <button
             type="submit"
@@ -857,6 +1033,10 @@ React.FC<CustomerAuthProps> = ({
           </button>
 
 
+          {/* =================================================
+              CHANGE MODE
+              ================================================= */}
+
           <button
             type="button"
             onClick={
@@ -870,6 +1050,7 @@ React.FC<CustomerAuthProps> = ({
                     ? 'register'
                     : 'login'
                 );
+
               }
             }
             disabled={
