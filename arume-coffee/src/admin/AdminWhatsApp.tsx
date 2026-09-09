@@ -40,6 +40,7 @@ type Conversation = {
 
 type ChatMessage = {
   id: string;
+
   direction:
     | 'incoming'
     | 'outgoing';
@@ -78,13 +79,28 @@ type ApiMessage = {
 };
 
 
+type WhatsAppHealth = {
+  configured: boolean;
+  loading: boolean;
+};
+
+
+/* =========================================================
+   API
+   ========================================================= */
+
 const API_BASE_URL =
   'https://arume-coffee-api-2.diyanaxl.workers.dev';
 
 
+/* =========================================================
+   NORMALIZE CONVERSATION
+   ========================================================= */
+
 const normalizeConversation = (
   item: ApiConversation
 ): Conversation => ({
+
   id:
     String(
       item.id
@@ -120,12 +136,18 @@ const normalizeConversation = (
       item.unread_count ||
       0
     )
+
 });
 
+
+/* =========================================================
+   NORMALIZE MESSAGE
+   ========================================================= */
 
 const normalizeMessage = (
   item: ApiMessage
 ): ChatMessage => ({
+
   id:
     String(
       item.id ||
@@ -150,25 +172,8 @@ const normalizeMessage = (
 
   status:
     item.status
+
 });
-
-
-/* =========================================================
-   PLACEHOLDER DATA
-
-   Nanti bagian ini dihapus setelah backend
-   WhatsApp + Supabase sudah tersambung.
-   ========================================================= */
-
-const PLACEHOLDER_CONVERSATIONS:
-  Conversation[] = [];
-
-
-const PLACEHOLDER_MESSAGES:
-  Record<
-    string,
-    ChatMessage[]
-  > = {};
 
 
 /* =========================================================
@@ -176,8 +181,7 @@ const PLACEHOLDER_MESSAGES:
    ========================================================= */
 
 const formatTime = (
-  value:
-    string
+  value: string
 ) => {
 
   if (
@@ -224,8 +228,7 @@ const formatTime = (
    ========================================================= */
 
 const formatChatDate = (
-  value:
-    string
+  value: string
 ) => {
 
   if (
@@ -288,7 +291,7 @@ export function AdminWhatsApp({
     setConversations
   ] =
     useState<Conversation[]>(
-      PLACEHOLDER_CONVERSATIONS
+      []
     );
 
 
@@ -302,7 +305,7 @@ export function AdminWhatsApp({
         ChatMessage[]
       >
     >(
-      PLACEHOLDER_MESSAGES
+      {}
     );
 
 
@@ -358,6 +361,19 @@ export function AdminWhatsApp({
     useState(
       ''
     );
+
+
+  const [
+    whatsappHealth,
+    setWhatsAppHealth
+  ] =
+    useState<WhatsAppHealth>({
+      configured:
+        false,
+
+      loading:
+        true
+    });
 
 
   /* =========================================================
@@ -462,8 +478,10 @@ export function AdminWhatsApp({
 
       const headers:
         Record<string, string> = {
+
           'X-ADMIN-SECRET':
             secret
+
         };
 
 
@@ -486,6 +504,7 @@ export function AdminWhatsApp({
     (
       result:
         any,
+
       fallback:
         string
     ) => {
@@ -496,6 +515,59 @@ export function AdminWhatsApp({
         result?.details ||
         fallback
       );
+    };
+
+
+  /* =========================================================
+     LOAD WHATSAPP HEALTH
+     ========================================================= */
+
+  const loadWhatsAppHealth =
+    async () => {
+
+      try {
+
+        const response =
+          await fetch(
+            `${API_BASE_URL}/api/health`
+          );
+
+
+        const result =
+          await response.json();
+
+
+        const configured =
+          Boolean(
+            result?.data?.whatsapp_configured ??
+            result?.whatsapp_configured
+          );
+
+
+        setWhatsAppHealth({
+          configured,
+          loading:
+            false
+        });
+
+      } catch (
+        err
+      ) {
+
+        console.error(
+          'WhatsApp health error:',
+          err
+        );
+
+
+        setWhatsAppHealth({
+          configured:
+            false,
+
+          loading:
+            false
+        });
+      }
     };
 
 
@@ -647,6 +719,7 @@ export function AdminWhatsApp({
     async (
       conversation:
         Conversation,
+
       silent =
         false
     ) => {
@@ -797,6 +870,7 @@ export function AdminWhatsApp({
           const result =
             await response.json();
 
+
           throw new Error(
             getErrorMessage(
               result,
@@ -884,9 +958,13 @@ export function AdminWhatsApp({
 
       try {
 
-        await loadConversations(
-          true
-        );
+        await Promise.all([
+          loadConversations(
+            true
+          ),
+
+          loadWhatsAppHealth()
+        ]);
 
 
         if (
@@ -968,11 +1046,13 @@ export function AdminWhatsApp({
 
               body:
                 JSON.stringify({
+
                   phone_number:
                     selectedConversation.phone,
 
                   message_text:
                     normalized
+
                 })
             }
           );
@@ -1069,6 +1149,8 @@ export function AdminWhatsApp({
 
       void loadConversations();
 
+      void loadWhatsAppHealth();
+
 
       const timer =
         window.setInterval(
@@ -1077,6 +1159,9 @@ export function AdminWhatsApp({
             void loadConversations(
               true
             );
+
+            void loadWhatsAppHealth();
+
           },
           5000
         );
@@ -1095,6 +1180,10 @@ export function AdminWhatsApp({
     ]
   );
 
+
+  /* =========================================================
+     MESSAGE POLLING
+     ========================================================= */
 
   useEffect(
     () => {
@@ -1125,6 +1214,7 @@ export function AdminWhatsApp({
               conversation,
               true
             );
+
           },
           3000
         );
@@ -1203,31 +1293,50 @@ export function AdminWhatsApp({
         >
 
           <div
-            className="
+            className={`
               inline-flex
               items-center
               gap-2
               rounded-xl
               border
-              border-amber-500/30
-              bg-amber-950/20
               px-4
               py-2.5
               text-sm
-              text-amber-300
-            "
+
+              ${
+                whatsappHealth.loading
+                  ? 'border-amber-500/30 bg-amber-950/20 text-amber-300'
+                  : whatsappHealth.configured
+                    ? 'border-green-500/30 bg-green-950/20 text-green-300'
+                    : 'border-red-500/30 bg-red-950/20 text-red-300'
+              }
+            `}
           >
 
             <span
-              className="
+              className={`
                 w-2
                 h-2
                 rounded-full
-                bg-amber-400
-              "
+
+                ${
+                  whatsappHealth.loading
+                    ? 'bg-amber-400'
+                    : whatsappHealth.configured
+                      ? 'bg-green-400'
+                      : 'bg-red-400'
+                }
+              `}
             />
 
-            Webhook Aktif
+
+            {
+              whatsappHealth.loading
+                ? 'Mengecek WhatsApp...'
+                : whatsappHealth.configured
+                  ? 'WhatsApp Meta Terhubung'
+                  : 'WhatsApp Meta Belum Terhubung'
+            }
 
           </div>
 
@@ -1279,23 +1388,26 @@ export function AdminWhatsApp({
       </div>
 
 
-      {error && (
-        <div
-          className="
-            mb-4
-            rounded-xl
-            border
-            border-red-500/30
-            bg-red-950/20
-            px-4
-            py-3
-            text-sm
-            text-red-300
-          "
-        >
-          {error}
-        </div>
-      )}
+      {
+        error &&
+        (
+          <div
+            className="
+              mb-4
+              rounded-xl
+              border
+              border-red-500/30
+              bg-red-950/20
+              px-4
+              py-3
+              text-sm
+              text-red-300
+            "
+          >
+            {error}
+          </div>
+        )
+      }
 
 
       {/* =====================================================
@@ -1322,9 +1434,7 @@ export function AdminWhatsApp({
         >
 
 
-          {/* =================================================
-              LEFT SIDEBAR
-              ================================================= */}
+          {/* LEFT */}
 
           <aside
             className="
@@ -1380,9 +1490,7 @@ export function AdminWhatsApp({
                       )
                   }
 
-                  placeholder="
-                    Cari customer...
-                  "
+                  placeholder="Cari customer..."
 
                   className="
                     w-full
@@ -1407,7 +1515,7 @@ export function AdminWhatsApp({
             </div>
 
 
-            {/* CONVERSATION TITLE */}
+            {/* TITLE */}
 
             <div
               className="
@@ -1462,255 +1570,267 @@ export function AdminWhatsApp({
               "
             >
 
-              {filteredConversations.length ===
-              0 ? (
+              {
+                filteredConversations.length ===
+                0
+                  ? (
 
-                <div
-                  className="
-                    px-6
-                    py-16
-                    text-center
-                  "
-                >
-
-                  <div
-                    className="
-                      w-12
-                      h-12
-                      mx-auto
-                      rounded-xl
-                      border
-                      border-[#302820]
-                      bg-[#17110d]
-                      flex
-                      items-center
-                      justify-center
-                      mb-4
-                    "
-                  >
-
-                    <MessageCircle
+                    <div
                       className="
-                        w-6
-                        h-6
-                        text-[#625548]
+                        px-6
+                        py-16
+                        text-center
                       "
-                    />
+                    >
 
-                  </div>
-
-
-                  <p
-                    className="
-                      text-sm
-                      font-bold
-                      text-[#ad9f91]
-                    "
-                  >
-                    Belum ada chat
-                  </p>
-
-
-                  <p
-                    className="
-                      text-xs
-                      leading-5
-                      text-[#6f6257]
-                      mt-2
-                    "
-                  >
-                    Pesan customer akan muncul
-                    setelah webhook Meta aktif.
-                  </p>
-
-                </div>
-
-              ) : (
-
-                filteredConversations.map(
-                  conversation => {
-
-                    const active =
-                      selectedConversationId ===
-                      conversation.id;
-
-
-                    return (
-
-                      <button
-                        key={
-                          conversation.id
-                        }
-
-                        type="button"
-
-                        onClick={() =>
-                          selectConversation(
-                            conversation
-                          )
-                        }
-
-                        className={`
-                          w-full
-                          px-4
-                          py-4
-                          border-b
-                          border-[#282018]
-                          text-left
-                          transition
-
-                          ${
-                            active
-                              ? 'bg-[#21180f]'
-                              : 'hover:bg-[#17110d]'
-                          }
-                        `}
+                      <div
+                        className="
+                          w-12
+                          h-12
+                          mx-auto
+                          rounded-xl
+                          border
+                          border-[#302820]
+                          bg-[#17110d]
+                          flex
+                          items-center
+                          justify-center
+                          mb-4
+                        "
                       >
 
-                        <div
+                        <MessageCircle
                           className="
-                            flex
-                            gap-3
+                            w-6
+                            h-6
+                            text-[#625548]
                           "
-                        >
+                        />
 
-                          {/* AVATAR */}
-
-                          <div
-                            className="
-                              w-11
-                              h-11
-                              rounded-full
-                              shrink-0
-                              bg-[#d4af37]/10
-                              border
-                              border-[#d4af37]/20
-                              flex
-                              items-center
-                              justify-center
-                            "
-                          >
-
-                            <UserRound
-                              className="
-                                w-5
-                                h-5
-                                text-[#d4af37]
-                              "
-                            />
-
-                          </div>
+                      </div>
 
 
-                          <div
-                            className="
-                              flex-1
-                              min-w-0
-                            "
+                      <p
+                        className="
+                          text-sm
+                          font-bold
+                          text-[#ad9f91]
+                        "
+                      >
+                        Belum ada chat
+                      </p>
+
+
+                      <p
+                        className="
+                          text-xs
+                          leading-5
+                          text-[#6f6257]
+                          mt-2
+                        "
+                      >
+
+                        {
+                          whatsappHealth.loading
+                            ? 'Sedang mengecek koneksi WhatsApp Meta.'
+                            : whatsappHealth.configured
+                              ? 'Belum ada pesan customer yang masuk.'
+                              : 'WhatsApp Meta belum terhubung ke backend.'
+                        }
+
+                      </p>
+
+                    </div>
+
+                  )
+                  : (
+
+                    filteredConversations.map(
+                      conversation => {
+
+                        const active =
+                          selectedConversationId ===
+                          conversation.id;
+
+
+                        return (
+
+                          <button
+                            key={
+                              conversation.id
+                            }
+
+                            type="button"
+
+                            onClick={() =>
+                              selectConversation(
+                                conversation
+                              )
+                            }
+
+                            className={`
+                              w-full
+                              px-4
+                              py-4
+                              border-b
+                              border-[#282018]
+                              text-left
+                              transition
+
+                              ${
+                                active
+                                  ? 'bg-[#21180f]'
+                                  : 'hover:bg-[#17110d]'
+                              }
+                            `}
                           >
 
                             <div
                               className="
                                 flex
-                                items-start
-                                justify-between
-                                gap-2
+                                gap-3
                               "
                             >
 
-                              <p
+                              <div
                                 className="
-                                  text-sm
-                                  font-bold
-                                  truncate
-                                "
-                              >
-                                {conversation.customerName}
-                              </p>
-
-
-                              <span
-                                className="
-                                  text-[10px]
-                                  text-[#6f6257]
+                                  w-11
+                                  h-11
+                                  rounded-full
                                   shrink-0
+                                  bg-[#d4af37]/10
+                                  border
+                                  border-[#d4af37]/20
+                                  flex
+                                  items-center
+                                  justify-center
                                 "
                               >
-                                {formatTime(
-                                  conversation.lastMessageAt
-                                )}
-                              </span>
 
-                            </div>
+                                <UserRound
+                                  className="
+                                    w-5
+                                    h-5
+                                    text-[#d4af37]
+                                  "
+                                />
+
+                              </div>
 
 
-                            <div
-                              className="
-                                flex
-                                items-center
-                                gap-2
-                                mt-1
-                              "
-                            >
-
-                              <p
+                              <div
                                 className="
                                   flex-1
                                   min-w-0
-                                  text-xs
-                                  text-[#8f8377]
-                                  truncate
                                 "
                               >
-                                {conversation.lastMessage}
-                              </p>
 
-
-                              {conversation.unread >
-                              0 && (
-
-                                <span
+                                <div
                                   className="
-                                    min-w-5
-                                    h-5
-                                    px-1.5
-                                    rounded-full
-                                    bg-[#d4af37]
-                                    text-black
-                                    text-[10px]
-                                    font-bold
                                     flex
-                                    items-center
-                                    justify-center
+                                    items-start
+                                    justify-between
+                                    gap-2
                                   "
                                 >
-                                  {conversation.unread}
-                                </span>
 
-                              )}
+                                  <p
+                                    className="
+                                      text-sm
+                                      font-bold
+                                      truncate
+                                    "
+                                  >
+                                    {conversation.customerName}
+                                  </p>
+
+
+                                  <span
+                                    className="
+                                      text-[10px]
+                                      text-[#6f6257]
+                                      shrink-0
+                                    "
+                                  >
+                                    {
+                                      formatTime(
+                                        conversation.lastMessageAt
+                                      )
+                                    }
+                                  </span>
+
+                                </div>
+
+
+                                <div
+                                  className="
+                                    flex
+                                    items-center
+                                    gap-2
+                                    mt-1
+                                  "
+                                >
+
+                                  <p
+                                    className="
+                                      flex-1
+                                      min-w-0
+                                      text-xs
+                                      text-[#8f8377]
+                                      truncate
+                                    "
+                                  >
+                                    {conversation.lastMessage}
+                                  </p>
+
+
+                                  {
+                                    conversation.unread >
+                                    0 &&
+                                    (
+
+                                      <span
+                                        className="
+                                          min-w-5
+                                          h-5
+                                          px-1.5
+                                          rounded-full
+                                          bg-[#d4af37]
+                                          text-black
+                                          text-[10px]
+                                          font-bold
+                                          flex
+                                          items-center
+                                          justify-center
+                                        "
+                                      >
+                                        {conversation.unread}
+                                      </span>
+
+                                    )
+                                  }
+
+                                </div>
+
+                              </div>
 
                             </div>
 
-                          </div>
+                          </button>
 
-                        </div>
+                        );
+                      }
+                    )
 
-                      </button>
-
-                    );
-                  }
-                )
-
-              )}
+                  )
+              }
 
             </div>
 
           </aside>
 
 
-          {/* =================================================
-              RIGHT CHAT
-              ================================================= */}
+          {/* RIGHT CHAT */}
 
           <div
             className="
@@ -1721,228 +1841,132 @@ export function AdminWhatsApp({
             "
           >
 
-            {!selectedConversation ? (
-
-              /* ===============================================
-                 EMPTY CHAT
-                 =============================================== */
-
-              <div
-                className="
-                  flex-1
-                  min-h-[500px]
-                  flex
-                  items-center
-                  justify-center
-                  p-8
-                  text-center
-                "
-              >
-
-                <div
-                  className="
-                    max-w-md
-                  "
-                >
+            {
+              !selectedConversation
+                ? (
 
                   <div
                     className="
-                      w-20
-                      h-20
-                      mx-auto
-                      rounded-3xl
-                      border
-                      border-[#d4af37]/20
-                      bg-[#d4af37]/10
+                      flex-1
+                      min-h-[500px]
                       flex
                       items-center
                       justify-center
-                      mb-6
-                    "
-                  >
-
-                    <MessageCircle
-                      className="
-                        w-10
-                        h-10
-                        text-[#d4af37]
-                      "
-                    />
-
-                  </div>
-
-
-                  <h3
-                    className="
-                      text-2xl
-                      font-bold
-                    "
-                  >
-                    WhatsApp Inbox
-                  </h3>
-
-
-                  <p
-                    className="
-                      text-sm
-                      leading-6
-                      text-[#8f8377]
-                      mt-3
-                    "
-                  >
-                    Pilih percakapan customer di sebelah kiri
-                    untuk membaca dan membalas pesan
-                    WhatsApp dari admin Arume Coffee.
-                  </p>
-
-
-                  <div
-                    className="
-                      mt-6
-                      rounded-xl
-                      border
-                      border-[#302820]
-                      bg-[#13100d]
-                      p-4
+                      p-8
+                      text-center
                     "
                   >
 
                     <div
                       className="
-                        flex
-                        items-center
-                        justify-center
-                        gap-2
-                        text-amber-300
+                        max-w-md
                       "
                     >
 
-                      <Clock3
+                      <div
                         className="
-                          w-4
-                          h-4
+                          w-20
+                          h-20
+                          mx-auto
+                          rounded-3xl
+                          border
+                          border-[#d4af37]/20
+                          bg-[#d4af37]/10
+                          flex
+                          items-center
+                          justify-center
+                          mb-6
                         "
-                      />
+                      >
 
-                      <span
+                        <MessageCircle
+                          className="
+                            w-10
+                            h-10
+                            text-[#d4af37]
+                          "
+                        />
+
+                      </div>
+
+
+                      <h3
                         className="
-                          text-sm
+                          text-2xl
                           font-bold
                         "
                       >
-                        Webhook aktif
-                      </span>
+                        WhatsApp Inbox
+                      </h3>
 
-                    </div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            ) : (
-
-              <>
-                {/* =============================================
-                    CHAT HEADER
-                    ============================================= */}
-
-                <div
-                  className="
-                    min-h-[72px]
-                    px-4
-                    sm:px-5
-                    border-b
-                    border-[#302820]
-                    bg-[#100c09]
-                    flex
-                    items-center
-                    justify-between
-                    gap-4
-                  "
-                >
-
-                  <div
-                    className="
-                      flex
-                      items-center
-                      gap-3
-                      min-w-0
-                    "
-                  >
-
-                    <div
-                      className="
-                        w-11
-                        h-11
-                        rounded-full
-                        shrink-0
-                        bg-[#d4af37]/10
-                        border
-                        border-[#d4af37]/20
-                        flex
-                        items-center
-                        justify-center
-                      "
-                    >
-
-                      <UserRound
-                        className="
-                          w-5
-                          h-5
-                          text-[#d4af37]
-                        "
-                      />
-
-                    </div>
-
-
-                    <div
-                      className="
-                        min-w-0
-                      "
-                    >
 
                       <p
                         className="
-                          font-bold
-                          truncate
+                          text-sm
+                          leading-6
+                          text-[#8f8377]
+                          mt-3
                         "
                       >
-                        {
-                          selectedConversation.customerName
-                        }
+                        Pilih percakapan customer di sebelah kiri
+                        untuk membaca dan membalas pesan
+                        WhatsApp dari admin Arume Coffee.
                       </p>
 
 
                       <div
                         className="
-                          flex
-                          items-center
-                          gap-1.5
-                          mt-1
-                          text-xs
-                          text-[#817468]
+                          mt-6
+                          rounded-xl
+                          border
+                          border-[#302820]
+                          bg-[#13100d]
+                          p-4
                         "
                       >
 
-                        <Phone
-                          className="
-                            w-3
-                            h-3
-                          "
-                        />
+                        <div
+                          className={`
+                            flex
+                            items-center
+                            justify-center
+                            gap-2
 
-                        <span
-                          className="
-                            truncate
-                          "
+                            ${
+                              whatsappHealth.loading
+                                ? 'text-amber-300'
+                                : whatsappHealth.configured
+                                  ? 'text-green-300'
+                                  : 'text-red-300'
+                            }
+                          `}
                         >
-                          {
-                            selectedConversation.phone
-                          }
-                        </span>
+
+                          <Clock3
+                            className="
+                              w-4
+                              h-4
+                            "
+                          />
+
+                          <span
+                            className="
+                              text-sm
+                              font-bold
+                            "
+                          >
+
+                            {
+                              whatsappHealth.loading
+                                ? 'Mengecek koneksi WhatsApp'
+                                : whatsappHealth.configured
+                                  ? 'WhatsApp Meta aktif'
+                                  : 'WhatsApp Meta belum aktif'
+                            }
+
+                          </span>
+
+                        </div>
 
                       </div>
 
@@ -1950,338 +1974,453 @@ export function AdminWhatsApp({
 
                   </div>
 
+                )
+                : (
 
-                  <button
-                    type="button"
+                  <>
 
-                    className="
-                      w-10
-                      h-10
-                      rounded-xl
-                      border
-                      border-[#302820]
-                      flex
-                      items-center
-                      justify-center
-                      text-[#8f8377]
-                      hover:text-[#d4af37]
-                      hover:border-[#d4af37]/40
-                      transition
-                    "
-                  >
-
-                    <MoreVertical
-                      className="
-                        w-5
-                        h-5
-                      "
-                    />
-
-                  </button>
-
-                </div>
-
-
-                {/* =============================================
-                    MESSAGES
-                    ============================================= */}
-
-                <div
-                  className="
-                    flex-1
-                    min-h-[420px]
-                    overflow-y-auto
-                    px-4
-                    sm:px-6
-                    py-6
-                    space-y-4
-                  "
-                >
-
-                  {currentMessages.length ===
-                  0 ? (
+                    {/* CHAT HEADER */}
 
                     <div
                       className="
-                        h-full
-                        min-h-[360px]
+                        min-h-[72px]
+                        px-4
+                        sm:px-5
+                        border-b
+                        border-[#302820]
+                        bg-[#100c09]
                         flex
                         items-center
-                        justify-center
-                        text-center
+                        justify-between
+                        gap-4
                       "
                     >
 
-                      <div>
+                      <div
+                        className="
+                          flex
+                          items-center
+                          gap-3
+                          min-w-0
+                        "
+                      >
 
-                        <MessageCircle
+                        <div
                           className="
-                            w-8
-                            h-8
-                            mx-auto
-                            text-[#625548]
-                            mb-3
-                          "
-                        />
-
-                        <p
-                          className="
-                            text-sm
-                            text-[#817468]
+                            w-11
+                            h-11
+                            rounded-full
+                            shrink-0
+                            bg-[#d4af37]/10
+                            border
+                            border-[#d4af37]/20
+                            flex
+                            items-center
+                            justify-center
                           "
                         >
-                          Belum ada pesan.
-                        </p>
+
+                          <UserRound
+                            className="
+                              w-5
+                              h-5
+                              text-[#d4af37]
+                            "
+                          />
+
+                        </div>
+
+
+                        <div
+                          className="
+                            min-w-0
+                          "
+                        >
+
+                          <p
+                            className="
+                              font-bold
+                              truncate
+                            "
+                          >
+                            {
+                              selectedConversation.customerName
+                            }
+                          </p>
+
+
+                          <div
+                            className="
+                              flex
+                              items-center
+                              gap-1.5
+                              mt-1
+                              text-xs
+                              text-[#817468]
+                            "
+                          >
+
+                            <Phone
+                              className="
+                                w-3
+                                h-3
+                              "
+                            />
+
+                            <span
+                              className="
+                                truncate
+                              "
+                            >
+                              {
+                                selectedConversation.phone
+                              }
+                            </span>
+
+                          </div>
+
+                        </div>
 
                       </div>
 
+
+                      <button
+                        type="button"
+
+                        className="
+                          w-10
+                          h-10
+                          rounded-xl
+                          border
+                          border-[#302820]
+                          flex
+                          items-center
+                          justify-center
+                          text-[#8f8377]
+                          hover:text-[#d4af37]
+                          hover:border-[#d4af37]/40
+                          transition
+                        "
+                      >
+
+                        <MoreVertical
+                          className="
+                            w-5
+                            h-5
+                          "
+                        />
+
+                      </button>
+
                     </div>
 
-                  ) : (
 
-                    currentMessages.map(
-                      message => {
+                    {/* MESSAGES */}
 
-                        const outgoing =
-                          message.direction ===
-                          'outgoing';
+                    <div
+                      className="
+                        flex-1
+                        min-h-[420px]
+                        overflow-y-auto
+                        px-4
+                        sm:px-6
+                        py-6
+                        space-y-4
+                      "
+                    >
 
-
-                        return (
-
-                          <div
-                            key={
-                              message.id
-                            }
-
-                            className={`
-                              flex
-
-                              ${
-                                outgoing
-                                  ? 'justify-end'
-                                  : 'justify-start'
-                              }
-                            `}
-                          >
+                      {
+                        currentMessages.length ===
+                        0
+                          ? (
 
                             <div
-                              className={`
-                                max-w-[85%]
-                                sm:max-w-[70%]
-                                rounded-2xl
-                                px-4
-                                py-3
-                                border
-                                shadow-sm
-
-                                ${
-                                  outgoing
-                                    ? 'bg-[#2b2414] border-[#d4af37]/20'
-                                    : 'bg-[#17110d] border-[#302820]'
-                                }
-                              `}
+                              className="
+                                h-full
+                                min-h-[360px]
+                                flex
+                                items-center
+                                justify-center
+                                text-center
+                              "
                             >
 
-                              <p
-                                className="
-                                  text-sm
-                                  leading-6
-                                  whitespace-pre-wrap
-                                  break-words
-                                "
-                              >
-                                {message.message}
-                              </p>
+                              <div>
 
-
-                              <div
-                                className="
-                                  flex
-                                  items-center
-                                  justify-end
-                                  gap-1
-                                  mt-2
-                                "
-                              >
-
-                                <span
+                                <MessageCircle
                                   className="
-                                    text-[10px]
-                                    text-[#6f6257]
+                                    w-8
+                                    h-8
+                                    mx-auto
+                                    text-[#625548]
+                                    mb-3
+                                  "
+                                />
+
+                                <p
+                                  className="
+                                    text-sm
+                                    text-[#817468]
                                   "
                                 >
-                                  {formatChatDate(
-                                    message.createdAt
-                                  )}{' '}
-                                  {formatTime(
-                                    message.createdAt
-                                  )}
-                                </span>
-
-
-                                {outgoing && (
-
-                                  <CheckCheck
-                                    className="
-                                      w-3.5
-                                      h-3.5
-                                      text-[#d4af37]
-                                    "
-                                  />
-
-                                )}
+                                  Belum ada pesan.
+                                </p>
 
                               </div>
 
                             </div>
 
-                          </div>
+                          )
+                          : (
 
-                        );
-                      }
-                    )
+                            currentMessages.map(
+                              message => {
 
-                  )}
+                                const outgoing =
+                                  message.direction ===
+                                  'outgoing';
 
-                </div>
+
+                                return (
+
+                                  <div
+                                    key={
+                                      message.id
+                                    }
+
+                                    className={`
+                                      flex
+
+                                      ${
+                                        outgoing
+                                          ? 'justify-end'
+                                          : 'justify-start'
+                                      }
+                                    `}
+                                  >
+
+                                    <div
+                                      className={`
+                                        max-w-[85%]
+                                        sm:max-w-[70%]
+                                        rounded-2xl
+                                        px-4
+                                        py-3
+                                        border
+                                        shadow-sm
+
+                                        ${
+                                          outgoing
+                                            ? 'bg-[#2b2414] border-[#d4af37]/20'
+                                            : 'bg-[#17110d] border-[#302820]'
+                                        }
+                                      `}
+                                    >
+
+                                      <p
+                                        className="
+                                          text-sm
+                                          leading-6
+                                          whitespace-pre-wrap
+                                          break-words
+                                        "
+                                      >
+                                        {message.message}
+                                      </p>
 
 
-                {/* =============================================
-                    INPUT
-                    ============================================= */}
+                                      <div
+                                        className="
+                                          flex
+                                          items-center
+                                          justify-end
+                                          gap-1
+                                          mt-2
+                                        "
+                                      >
 
-                <div
-                  className="
-                    border-t
-                    border-[#302820]
-                    bg-[#100c09]
-                    p-4
-                  "
-                >
+                                        <span
+                                          className="
+                                            text-[10px]
+                                            text-[#6f6257]
+                                          "
+                                        >
+                                          {
+                                            formatChatDate(
+                                              message.createdAt
+                                            )
+                                          }{' '}
+                                          {
+                                            formatTime(
+                                              message.createdAt
+                                            )
+                                          }
+                                        </span>
 
-                  <div
-                    className="
-                      flex
-                      items-end
-                      gap-3
-                    "
-                  >
 
-                    <textarea
-                      rows={
-                        1
-                      }
+                                        {
+                                          outgoing &&
+                                          (
 
-                      value={
-                        messageInput
-                      }
+                                            <CheckCheck
+                                              className="
+                                                w-3.5
+                                                h-3.5
+                                                text-[#d4af37]
+                                              "
+                                            />
 
-                      onChange={
-                        event =>
-                          setMessageInput(
-                            event.target.value
+                                          )
+                                        }
+
+                                      </div>
+
+                                    </div>
+
+                                  </div>
+
+                                );
+                              }
+                            )
+
                           )
                       }
 
-                      onKeyDown={
-                        event => {
+                    </div>
 
-                          if (
-                            event.key ===
-                              'Enter' &&
-                            !event.shiftKey
-                          ) {
 
-                            event.preventDefault();
+                    {/* INPUT */}
 
-                            handleSendMessage();
-                          }
-                        }
-                      }
-
-                      placeholder="
-                        Tulis pesan...
-                      "
-
+                    <div
                       className="
-                        flex-1
-                        min-w-0
-                        min-h-12
-                        max-h-32
-                        resize-none
-                        rounded-xl
-                        border
-                        border-[#382e25]
-                        bg-[#0a0806]
-                        px-4
-                        py-3
-                        text-sm
-                        text-[#f3ece2]
-                        placeholder:text-[#625548]
-                        outline-none
-                        focus:border-[#d4af37]
-                        transition
-                      "
-                    />
-
-
-                    <button
-                      type="button"
-
-                      onClick={
-                        handleSendMessage
-                      }
-
-                      disabled={
-                        !messageInput.trim() ||
-                        sending
-                      }
-
-                      className="
-                        w-12
-                        h-12
-                        shrink-0
-                        rounded-xl
-                        bg-[#d4af37]
-                        text-black
-                        flex
-                        items-center
-                        justify-center
-                        hover:bg-[#e2c256]
-                        disabled:opacity-40
-                        disabled:cursor-not-allowed
-                        transition
+                        border-t
+                        border-[#302820]
+                        bg-[#100c09]
+                        p-4
                       "
                     >
 
-                      <Send
+                      <div
                         className="
-                          w-5
-                          h-5
+                          flex
+                          items-end
+                          gap-3
                         "
-                      />
+                      >
 
-                    </button>
+                        <textarea
+                          rows={
+                            1
+                          }
 
-                  </div>
+                          value={
+                            messageInput
+                          }
+
+                          onChange={
+                            event =>
+                              setMessageInput(
+                                event.target.value
+                              )
+                          }
+
+                          onKeyDown={
+                            event => {
+
+                              if (
+                                event.key ===
+                                  'Enter' &&
+                                !event.shiftKey
+                              ) {
+
+                                event.preventDefault();
+
+                                void handleSendMessage();
+                              }
+                            }
+                          }
+
+                          placeholder="Tulis pesan..."
+
+                          className="
+                            flex-1
+                            min-w-0
+                            min-h-12
+                            max-h-32
+                            resize-none
+                            rounded-xl
+                            border
+                            border-[#382e25]
+                            bg-[#0a0806]
+                            px-4
+                            py-3
+                            text-sm
+                            text-[#f3ece2]
+                            placeholder:text-[#625548]
+                            outline-none
+                            focus:border-[#d4af37]
+                            transition
+                          "
+                        />
 
 
-                  <p
-                    className="
-                      text-[10px]
-                      text-[#625548]
-                      mt-2
-                    "
-                  >
-                    Enter untuk kirim • Shift + Enter untuk baris baru
-                  </p>
+                        <button
+                          type="button"
 
-                </div>
+                          onClick={() =>
+                            void handleSendMessage()
+                          }
 
-              </>
+                          disabled={
+                            !messageInput.trim() ||
+                            sending
+                          }
 
-            )}
+                          className="
+                            w-12
+                            h-12
+                            shrink-0
+                            rounded-xl
+                            bg-[#d4af37]
+                            text-black
+                            flex
+                            items-center
+                            justify-center
+                            hover:bg-[#e2c256]
+                            disabled:opacity-40
+                            disabled:cursor-not-allowed
+                            transition
+                          "
+                        >
+
+                          <Send
+                            className="
+                              w-5
+                              h-5
+                            "
+                          />
+
+                        </button>
+
+                      </div>
+
+
+                      <p
+                        className="
+                          text-[10px]
+                          text-[#625548]
+                          mt-2
+                        "
+                      >
+                        Enter untuk kirim • Shift + Enter untuk baris baru
+                      </p>
+
+                    </div>
+
+                  </>
+
+                )
+            }
 
           </div>
 
