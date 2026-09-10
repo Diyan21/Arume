@@ -72,9 +72,20 @@ type ApiMessage = {
   id: string;
   whatsapp_message_id?: string | null;
   phone_number: string;
-  direction: 'incoming' | 'outgoing';
+
+  direction:
+    | 'incoming'
+    | 'outgoing';
+
   message_text?: string | null;
-  status?: 'received' | 'sent' | 'delivered' | 'read' | 'failed';
+
+  status?:
+    | 'received'
+    | 'sent'
+    | 'delivered'
+    | 'read'
+    | 'failed';
+
   created_at: string;
 };
 
@@ -355,6 +366,15 @@ export function AdminWhatsApp({
 
 
   const [
+    loadingMessages,
+    setLoadingMessages
+  ] =
+    useState(
+      false
+    );
+
+
+  const [
     error,
     setError
   ] =
@@ -546,6 +566,7 @@ export function AdminWhatsApp({
 
         setWhatsAppHealth({
           configured,
+
           loading:
             false
         });
@@ -660,19 +681,30 @@ export function AdminWhatsApp({
         );
 
 
-        if (
-          selectedConversationId &&
-          !normalized.some(
-            item =>
-              item.id ===
-              selectedConversationId
-          )
-        ) {
+        setSelectedConversationId(
+          current => {
 
-          setSelectedConversationId(
-            null
-          );
-        }
+            if (
+              !current
+            ) {
+
+              return current;
+            }
+
+
+            const stillExists =
+              normalized.some(
+                item =>
+                  item.id ===
+                  current
+              );
+
+
+            return stillExists
+              ? current
+              : null;
+          }
+        );
 
 
       } catch (
@@ -730,6 +762,16 @@ export function AdminWhatsApp({
       ) {
 
         return;
+      }
+
+
+      if (
+        !silent
+      ) {
+
+        setLoadingMessages(
+          true
+        );
       }
 
 
@@ -821,6 +863,18 @@ export function AdminWhatsApp({
           setError(
             err?.message ||
             'Gagal mengambil pesan WhatsApp.'
+          );
+        }
+
+
+      } finally {
+
+        if (
+          !silent
+        ) {
+
+          setLoadingMessages(
+            false
           );
         }
       }
@@ -924,6 +978,11 @@ export function AdminWhatsApp({
       );
 
 
+      setMessageInput(
+        ''
+      );
+
+
       await Promise.all([
         loadMessages(
           conversation
@@ -934,6 +993,50 @@ export function AdminWhatsApp({
         )
       ]);
     };
+
+
+  /* =========================================================
+     AUTO SELECT FIRST CONVERSATION
+     ========================================================= */
+
+  useEffect(
+    () => {
+
+      if (
+        selectedConversationId ||
+        conversations.length ===
+        0
+      ) {
+
+        return;
+      }
+
+
+      const firstConversation =
+        conversations[0];
+
+
+      setSelectedConversationId(
+        firstConversation.id
+      );
+
+
+      void loadMessages(
+        firstConversation,
+        true
+      );
+
+
+      void markConversationRead(
+        firstConversation
+      );
+
+    },
+    [
+      conversations,
+      selectedConversationId
+    ]
+  );
 
 
   /* =========================================================
@@ -1108,18 +1211,18 @@ export function AdminWhatsApp({
         );
 
 
-        const message =
+        const errorMessage =
           err?.message ||
           'Gagal mengirim pesan WhatsApp.';
 
 
         setError(
-          message
+          errorMessage
         );
 
 
         window.alert(
-          message
+          errorMessage
         );
 
 
@@ -1133,7 +1236,7 @@ export function AdminWhatsApp({
 
 
   /* =========================================================
-     INITIAL LOAD + POLLING
+     INITIAL LOAD + CONVERSATION POLLING
      ========================================================= */
 
   useEffect(
@@ -1663,7 +1766,7 @@ export function AdminWhatsApp({
                             type="button"
 
                             onClick={() =>
-                              selectConversation(
+                              void selectConversation(
                                 conversation
                               )
                             }
@@ -1908,9 +2011,8 @@ export function AdminWhatsApp({
                           mt-3
                         "
                       >
-                        Pilih percakapan customer di sebelah kiri
-                        untuk membaca dan membalas pesan
-                        WhatsApp dari admin Arume Coffee.
+                        Pilih percakapan customer untuk membaca dan
+                        membalas pesan WhatsApp dari admin Arume Coffee.
                       </p>
 
 
@@ -2087,6 +2189,10 @@ export function AdminWhatsApp({
                       <button
                         type="button"
 
+                        onClick={
+                          handleRefresh
+                        }
+
                         className="
                           w-10
                           h-10
@@ -2130,8 +2236,7 @@ export function AdminWhatsApp({
                     >
 
                       {
-                        currentMessages.length ===
-                        0
+                        loadingMessages
                           ? (
 
                             <div
@@ -2141,149 +2246,185 @@ export function AdminWhatsApp({
                                 flex
                                 items-center
                                 justify-center
-                                text-center
                               "
                             >
 
-                              <div>
-
-                                <MessageCircle
-                                  className="
-                                    w-8
-                                    h-8
-                                    mx-auto
-                                    text-[#625548]
-                                    mb-3
-                                  "
-                                />
-
-                                <p
-                                  className="
-                                    text-sm
-                                    text-[#817468]
-                                  "
-                                >
-                                  Belum ada pesan.
-                                </p>
-
-                              </div>
+                              <RefreshCcw
+                                className="
+                                  w-6
+                                  h-6
+                                  text-[#d4af37]
+                                  animate-spin
+                                "
+                              />
 
                             </div>
 
                           )
-                          : (
 
-                            currentMessages.map(
-                              message => {
+                          : currentMessages.length ===
+                            0
+                            ? (
 
-                                const outgoing =
-                                  message.direction ===
-                                  'outgoing';
+                              <div
+                                className="
+                                  h-full
+                                  min-h-[360px]
+                                  flex
+                                  items-center
+                                  justify-center
+                                  text-center
+                                "
+                              >
 
+                                <div>
 
-                                return (
+                                  <MessageCircle
+                                    className="
+                                      w-8
+                                      h-8
+                                      mx-auto
+                                      text-[#625548]
+                                      mb-3
+                                    "
+                                  />
 
-                                  <div
-                                    key={
-                                      message.id
-                                    }
-
-                                    className={`
-                                      flex
-
-                                      ${
-                                        outgoing
-                                          ? 'justify-end'
-                                          : 'justify-start'
-                                      }
-                                    `}
+                                  <p
+                                    className="
+                                      text-sm
+                                      text-[#817468]
+                                    "
                                   >
+                                    Belum ada pesan.
+                                  </p>
+
+                                </div>
+
+                              </div>
+
+                            )
+                            : (
+
+                              currentMessages.map(
+                                message => {
+
+                                  const outgoing =
+                                    message.direction ===
+                                    'outgoing';
+
+
+                                  return (
 
                                     <div
+                                      key={
+                                        message.id
+                                      }
+
                                       className={`
-                                        max-w-[85%]
-                                        sm:max-w-[70%]
-                                        rounded-2xl
-                                        px-4
-                                        py-3
-                                        border
-                                        shadow-sm
+                                        flex
 
                                         ${
                                           outgoing
-                                            ? 'bg-[#2b2414] border-[#d4af37]/20'
-                                            : 'bg-[#17110d] border-[#302820]'
+                                            ? 'justify-end'
+                                            : 'justify-start'
                                         }
                                       `}
                                     >
 
-                                      <p
-                                        className="
-                                          text-sm
-                                          leading-6
-                                          whitespace-pre-wrap
-                                          break-words
-                                        "
-                                      >
-                                        {message.message}
-                                      </p>
-
-
                                       <div
-                                        className="
-                                          flex
-                                          items-center
-                                          justify-end
-                                          gap-1
-                                          mt-2
-                                        "
+                                        className={`
+                                          max-w-[85%]
+                                          sm:max-w-[70%]
+                                          rounded-2xl
+                                          px-4
+                                          py-3
+                                          border
+                                          shadow-sm
+
+                                          ${
+                                            outgoing
+                                              ? 'bg-[#2b2414] border-[#d4af37]/20'
+                                              : 'bg-[#17110d] border-[#302820]'
+                                          }
+                                        `}
                                       >
 
-                                        <span
+                                        <p
                                           className="
-                                            text-[10px]
-                                            text-[#6f6257]
+                                            text-sm
+                                            leading-6
+                                            whitespace-pre-wrap
+                                            break-words
                                           "
                                         >
+                                          {message.message}
+                                        </p>
+
+
+                                        <div
+                                          className="
+                                            flex
+                                            items-center
+                                            justify-end
+                                            gap-1
+                                            mt-2
+                                          "
+                                        >
+
+                                          <span
+                                            className="
+                                              text-[10px]
+                                              text-[#6f6257]
+                                            "
+                                          >
+                                            {
+                                              formatChatDate(
+                                                message.createdAt
+                                              )
+                                            }{' '}
+                                            {
+                                              formatTime(
+                                                message.createdAt
+                                              )
+                                            }
+                                          </span>
+
+
                                           {
-                                            formatChatDate(
-                                              message.createdAt
-                                            )
-                                          }{' '}
-                                          {
-                                            formatTime(
-                                              message.createdAt
+                                            outgoing &&
+                                            (
+
+                                              <CheckCheck
+                                                className={`
+                                                  w-3.5
+                                                  h-3.5
+
+                                                  ${
+                                                    message.status ===
+                                                    'failed'
+                                                      ? 'text-red-400'
+                                                      : message.status ===
+                                                        'read'
+                                                        ? 'text-blue-400'
+                                                        : 'text-[#d4af37]'
+                                                  }
+                                                `}
+                                              />
+
                                             )
                                           }
-                                        </span>
 
-
-                                        {
-                                          outgoing &&
-                                          (
-
-                                            <CheckCheck
-                                              className="
-                                                w-3.5
-                                                h-3.5
-                                                text-[#d4af37]
-                                              "
-                                            />
-
-                                          )
-                                        }
+                                        </div>
 
                                       </div>
 
                                     </div>
 
-                                  </div>
+                                  );
+                                }
+                              )
 
-                                );
-                              }
                             )
-
-                          )
                       }
 
                     </div>
@@ -2393,12 +2534,30 @@ export function AdminWhatsApp({
                           "
                         >
 
-                          <Send
-                            className="
-                              w-5
-                              h-5
-                            "
-                          />
+                          {
+                            sending
+                              ? (
+
+                                <RefreshCcw
+                                  className="
+                                    w-5
+                                    h-5
+                                    animate-spin
+                                  "
+                                />
+
+                              )
+                              : (
+
+                                <Send
+                                  className="
+                                    w-5
+                                    h-5
+                                  "
+                                />
+
+                              )
+                          }
 
                         </button>
 
