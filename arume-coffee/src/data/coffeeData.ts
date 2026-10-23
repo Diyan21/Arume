@@ -148,7 +148,7 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
     rating: 4.9,
     reviewsCount: 0,
     tags: [
-      'All Arumeya Coffee 500g',
+      'All Arumeya Coffee 500ml',
       'Arabica & Robusta',
       '500ml',
     ],
@@ -158,7 +158,7 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
     id: 'prod-08',
     name: 'All Arumeya Coffee 1000ml',
     description:
-      'ALL MENU ARUMEYA COFFEE 500 ML ☕ | Keharuman & Kehangatannya 🤎.',
+      'ALL MENU ARUMEYA COFFEE 1000 ML ☕ | Keharuman & Kehangatannya 🤎.',
     price: 70000,
     formattedPrice: 'Rp70.000',
     image:
