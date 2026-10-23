@@ -159,7 +159,7 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
     name: 'All Arumeya Coffee 1000ml',
     description:
       'ALL MENU ARUMEYA COFFEE 500 ML ☕ | Keharuman & Kehangatannya 🤎.',
-    price: 70.000,
+    price: 70000,
     formattedPrice: 'Rp70.000',
     image:
       '/images/menu/arume-toraja-1kg.jpg',
