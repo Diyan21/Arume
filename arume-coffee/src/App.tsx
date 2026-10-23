@@ -11,6 +11,7 @@ import { PaymentSection } from './components/PaymentSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { OrderModal } from './components/OrderModal';
+import { CartCheckoutModal, CartItem } from './components/CartCheckoutModal';
 import { OrderStatus } from './components/OrderStatus';
 import { CustomerAuth } from './components/CustomerAuth';
 
@@ -63,11 +64,6 @@ const STORE_LOCATION = {
 
 const ACTIVE_ORDER_STORAGE_KEY = 'arume_active_order';
 
-export interface CartItem {
-  menuItem: CoffeeMenuItem;
-  quantity: number;
-}
-
 interface CustomerProfile {
   id: string;
   full_name: string | null;
@@ -102,24 +98,39 @@ export default function App() {
 
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
 
-  const addToCart = (item: CoffeeMenuItem) => {
+  // Tambah item kustomisasi dari OrderModal ke Keranjang
+  const handleAddToCart = (customizedItem: any) => {
     setCartItems(prev => {
-      const existingIndex = prev.findIndex(i => i.menuItem.id === item.id);
+      const existingIndex = prev.findIndex(
+        i =>
+          i.id === customizedItem.id &&
+          i.iceLevel === customizedItem.iceLevel &&
+          i.sugarLevel === customizedItem.sugarLevel &&
+          i.notes === customizedItem.notes
+      );
+
       if (existingIndex > -1) {
         const updated = [...prev];
-        updated[existingIndex].quantity += 1;
+        updated[existingIndex].quantity += customizedItem.quantity;
         return updated;
       }
-      return [...prev, { menuItem: item, quantity: 1 }];
+      return [...prev, customizedItem];
     });
   };
 
-  const updateQuantity = (itemId: string, delta: number) => {
+  // Langsung checkout 1 item dari OrderModal (opsional)
+  const handleDirectCheckout = (customizedItem: any) => {
+    handleAddToCart(customizedItem);
+    setIsCheckoutModalOpen(true);
+  };
+
+  const updateQuantity = (index: number, delta: number) => {
     setCartItems(prev =>
       prev
-        .map(item => {
-          if (item.menuItem.id === itemId) {
+        .map((item, idx) => {
+          if (idx === index) {
             const newQty = item.quantity + delta;
             return newQty > 0 ? { ...item, quantity: newQty } : null;
           }
@@ -129,13 +140,13 @@ export default function App() {
     );
   };
 
-  const removeFromCart = (itemId: string) => {
-    setCartItems(prev => prev.filter(item => item.menuItem.id !== itemId));
+  const removeFromCart = (indexToRemove: number) => {
+    setCartItems(prev => prev.filter((_, index) => index !== indexToRemove));
   };
 
   const totalCartCount = cartItems.reduce((acc, curr) => acc + curr.quantity, 0);
   const totalCartPrice = cartItems.reduce(
-    (acc, curr) => acc + curr.menuItem.price * curr.quantity,
+    (acc, curr) => acc + Number(curr.price) * curr.quantity,
     0
   );
 
@@ -206,7 +217,7 @@ export default function App() {
       } catch (error) {
         console.error('Initialize customer auth error:', error);
         if (active) setCustomerProfile(null);
-      } finally {
+      } font-medium {
         if (active) setCustomerAuthLoading(false);
       }
     };
@@ -334,8 +345,8 @@ export default function App() {
 
         <MenuSection
           onSelectMenu={(item) => {
-            // Tambah item ke keranjang saat diklik
-            addToCart(item);
+            // Buka OrderModal kustomisasi per item
+            setSelectedItem(item);
           }}
         />
 
@@ -352,15 +363,31 @@ export default function App() {
       />
 
       {/* =====================================================
-          ORDER MODAL
+          ORDER MODAL (KUSTOMISASI 1 ITEM)
           ===================================================== */}
 
-      <OrderModal
-        item={selectedItem}
-        storeLocation={STORE_LOCATION}
-        customerProfile={customerProfile}
-        onClose={() => setSelectedItem(null)}
-      />
+      {selectedItem && (
+        <OrderModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onAddToCart={handleAddToCart}
+          onDirectCheckout={handleDirectCheckout}
+        />
+      )}
+
+      {/* =====================================================
+          CART CHECKOUT MODAL (BAYAR SEMUA ITEM VIA XENDIT)
+          ===================================================== */}
+
+      {isCheckoutModalOpen && (
+        <CartCheckoutModal
+          cartItems={cartItems}
+          storeLocation={STORE_LOCATION}
+          customerProfile={customerProfile}
+          onClose={() => setIsCheckoutModalOpen(false)}
+          onRemoveItem={removeFromCart}
+        />
+      )}
 
       {/* =====================================================
           FLOATING CART BAR (Bottom Trigger)
@@ -426,33 +453,31 @@ export default function App() {
                   <p>Keranjang kamu masih kosong, bro.</p>
                 </div>
               ) : (
-                cartItems.map(({ menuItem, quantity }) => (
+                cartItems.map((item, index) => (
                   <div
-                    key={menuItem.id}
+                    key={`${item.id}-${index}`}
                     className="p-3.5 rounded-xl bg-[#1d1712] border border-[#2b2118] flex items-center gap-3.5"
                   >
-                    <img
-                      src={menuItem.image}
-                      alt={menuItem.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm truncate text-[#f3ece2]">{menuItem.name}</h4>
-                      <p className="text-xs text-[#d4af37] font-semibold mt-0.5">
-                        Rp {(menuItem.price * quantity).toLocaleString('id-ID')}
+                      <h4 className="font-bold text-sm truncate text-[#f3ece2]">{item.name}</h4>
+                      <p className="text-[11px] text-[#a09080]">
+                        {[item.iceLevel, item.sugarLevel, item.notes].filter(Boolean).join(' • ')}
+                      </p>
+                      <p className="text-xs text-[#d4af37] font-semibold mt-1">
+                        Rp {(Number(item.price) * item.quantity).toLocaleString('id-ID')}
                       </p>
                       
                       {/* Qty Controller */}
                       <div className="flex items-center gap-2 mt-2">
                         <button
-                          onClick={() => updateQuantity(menuItem.id, -1)}
+                          onClick={() => updateQuantity(index, -1)}
                           className="w-6 h-6 rounded bg-[#2a2118] hover:bg-[#382c20] text-[#f3ece2] flex items-center justify-center transition"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-xs font-bold w-5 text-center">{quantity}</span>
+                        <span className="text-xs font-bold w-5 text-center">{item.quantity}</span>
                         <button
-                          onClick={() => updateQuantity(menuItem.id, 1)}
+                          onClick={() => updateQuantity(index, 1)}
                           className="w-6 h-6 rounded bg-[#2a2118] hover:bg-[#382c20] text-[#f3ece2] flex items-center justify-center transition"
                         >
                           <Plus className="w-3 h-3" />
@@ -461,7 +486,7 @@ export default function App() {
                     </div>
 
                     <button
-                      onClick={() => removeFromCart(menuItem.id)}
+                      onClick={() => removeFromCart(index)}
                       className="p-1.5 rounded-lg text-red-400 hover:bg-red-950/40 transition"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -483,8 +508,8 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedItem(cartItems[0].menuItem);
                     setIsCartOpen(false);
+                    setIsCheckoutModalOpen(true);
                   }}
                   className="w-full py-3.5 rounded-xl bg-[#d4af37] hover:bg-[#e2c256] text-black font-bold transition text-center"
                 >
