@@ -5,23 +5,21 @@ import {
   Star,
   ShoppingBag,
   Sparkles,
+  Plus
 } from 'lucide-react';
 import { CoffeeMenuItem } from '../types';
 
 interface MenuSectionProps {
   onSelectMenu: (item: CoffeeMenuItem) => void;
+  onAddToCart?: (item: CoffeeMenuItem) => void;
 }
 
 export const MenuSection: React.FC<MenuSectionProps> = ({
   onSelectMenu,
+  onAddToCart
 }) => {
   const [activeMenu, setActiveMenu] = useState<string>('all');
 
-  /*
-    Selection otomatis mengikuti isi COFFEE_MENU.
-    Jadi kalau nama menu di coffeeData berubah,
-    tombol selection ikut berubah juga.
-  */
   const menuFilters = [
     {
       id: 'all',
@@ -68,40 +66,34 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
             rgba(92,64,42,0.09) 1px,
             transparent 1.8px
           ),
-
           radial-gradient(
             circle at 75% 25%,
             rgba(184,134,11,0.08) 0px,
             rgba(184,134,11,0.08) 1.2px,
             transparent 2px
           ),
-
           radial-gradient(
             circle at 35% 70%,
             rgba(120,90,60,0.07) 0px,
             rgba(120,90,60,0.07) 1px,
             transparent 1.8px
           ),
-
           radial-gradient(
             circle at 85% 80%,
             rgba(80,55,38,0.06) 0px,
             rgba(80,55,38,0.06) 1.5px,
             transparent 2.2px
           ),
-
           radial-gradient(
             ellipse at 25% 40%,
             rgba(120,90,65,0.035) 0%,
             transparent 35%
           ),
-
           radial-gradient(
             ellipse at 80% 65%,
             rgba(184,134,11,0.03) 0%,
             transparent 35%
           ),
-
           linear-gradient(
             115deg,
             transparent 0%,
@@ -111,7 +103,6 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
             rgba(184,134,11,0.03) 60%,
             transparent 64%
           ),
-
           linear-gradient(
             to bottom,
             #f2e8da 0%,
@@ -132,48 +123,9 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
       }}
     >
       {/* GOLD AMBIENT */}
-      <div
-        className="
-          absolute
-          top-0
-          left-1/2
-          -translate-x-1/2
-          w-[800px]
-          h-[350px]
-          bg-[#d4af37]/10
-          rounded-full
-          blur-[170px]
-          pointer-events-none
-        "
-      />
-
-      <div
-        className="
-          absolute
-          bottom-0
-          left-0
-          w-80
-          h-80
-          bg-[#8b5a2b]/8
-          rounded-full
-          blur-[140px]
-          pointer-events-none
-        "
-      />
-
-      <div
-        className="
-          absolute
-          top-1/3
-          right-0
-          w-80
-          h-80
-          bg-[#d4af37]/8
-          rounded-full
-          blur-[140px]
-          pointer-events-none
-        "
-      />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-[#d4af37]/10 rounded-full blur-[170px] pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-80 h-80 bg-[#8b5a2b]/8 rounded-full blur-[140px] pointer-events-none" />
+      <div className="absolute top-1/3 right-0 w-80 h-80 bg-[#d4af37]/8 rounded-full blur-[140px] pointer-events-none" />
 
       {/* COFFEE BEANS SAMAR */}
       <div className="absolute inset-0 pointer-events-none hidden md:block">
@@ -188,177 +140,50 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
               transform: `rotate(${bean.rotate}) scale(${bean.scale})`,
             }}
           >
-            <div
-              className="
-                relative
-                w-10
-                h-16
-                rounded-[50%]
-                bg-[#70452d]/[0.055]
-                border
-                border-[#70452d]/[0.07]
-              "
-            >
-              <div
-                className="
-                  absolute
-                  left-1/2
-                  top-[8%]
-                  -translate-x-1/2
-                  w-[1px]
-                  h-[84%]
-                  bg-[#70452d]/15
-                  rotate-12
-                  rounded-full
-                "
-              />
+            <div className="relative w-10 h-16 rounded-[50%] bg-[#70452d]/[0.055] border border-[#70452d]/[0.07]">
+              <div className="absolute left-1/2 top-[8%] -translate-x-1/2 w-[1px] h-[84%] bg-[#70452d]/15 rotate-12 rounded-full" />
             </div>
           </div>
         ))}
       </div>
 
-      <div
-        className="
-          max-w-7xl
-          mx-auto
-          px-4
-          sm:px-6
-          lg:px-8
-          relative
-          z-10
-        "
-      >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         {/* HEADER */}
         <div className="text-center max-w-4xl mx-auto mb-14">
-
-          {/* BADGE */}
-          <div
-            className="
-              inline-flex
-              items-center
-              gap-2
-              px-4
-              py-2
-              rounded-full
-              bg-white/65
-              backdrop-blur-md
-              border
-              border-[#d4af37]/30
-              mb-5
-              shadow-sm
-            "
-          >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/65 backdrop-blur-md border border-[#d4af37]/30 mb-5 shadow-sm">
             <Coffee className="w-4 h-4 text-[#b8860b]" />
-
-            <span
-              className="
-                text-[11px]
-                sm:text-xs
-                font-extrabold
-                text-[#b8860b]
-                tracking-[0.16em]
-                uppercase
-              "
-            >
+            <span className="text-[11px] sm:text-xs font-extrabold text-[#b8860b] tracking-[0.16em] uppercase">
               Arumeya Collection
             </span>
           </div>
 
-          {/* TITLE */}
-          <h2
-            className="
-              text-3xl
-              sm:text-4xl
-              lg:text-5xl
-              font-black
-              tracking-tight
-              text-[#2d1b12]
-              leading-tight
-              mb-4
-            "
-          >
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#2d1b12] leading-tight mb-4">
             Temukan Rasa{' '}
             <span className="text-[#b8860b]">
               Arumeya
             </span>
           </h2>
 
-          {/* GOLD DIVIDER */}
-          <div
-            className="
-              w-20
-              h-[2px]
-              mx-auto
-              mb-5
-              bg-gradient-to-r
-              from-transparent
-              via-[#d4af37]
-              to-transparent
-            "
-          />
+          <div className="w-20 h-[2px] mx-auto mb-5 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent" />
 
-          {/* SUBTITLE */}
-          <p
-            className="
-              text-[#6d5844]
-              text-sm
-              sm:text-base
-              lg:text-lg
-              font-medium
-              leading-relaxed
-              max-w-3xl
-              mx-auto
-            "
-          >
+          <p className="text-[#6d5844] text-sm sm:text-base lg:text-lg font-medium leading-relaxed max-w-3xl mx-auto">
             Pilih varian favoritmu dan rasakan perpaduan aroma,
             rasa, serta kehangatan khas ARUME Coffee dalam setiap
             botol Arumeya.
           </p>
 
           {/* MENU SELECTION */}
-          <div
-            className="
-              flex
-              flex-wrap
-              items-center
-              justify-center
-              gap-2.5
-              mt-8
-            "
-          >
+          <div className="flex flex-wrap items-center justify-center gap-2.5 mt-8">
             {menuFilters.map((menu) => (
               <button
                 key={menu.id}
                 onClick={() => setActiveMenu(menu.id)}
                 className={`
-                  px-4
-                  sm:px-5
-                  py-2.5
-                  rounded-full
-                  text-[11px]
-                  sm:text-sm
-                  font-extrabold
-                  border
-                  transition-all
-                  duration-300
+                  px-4 sm:px-5 py-2.5 rounded-full text-[11px] sm:text-sm font-extrabold border transition-all duration-300
                   ${
                     activeMenu === menu.id
-                      ? `
-                        bg-[#b8860b]
-                        text-white
-                        border-[#b8860b]
-                        shadow-[0_8px_20px_rgba(184,134,11,0.20)]
-                        scale-[1.03]
-                      `
-                      : `
-                        bg-white/70
-                        text-[#5f4b38]
-                        border-[#d9c4a3]
-                        hover:bg-[#fff8ef]
-                        hover:text-[#b8860b]
-                        hover:border-[#d4af37]
-                        hover:-translate-y-0.5
-                      `
+                      ? 'bg-[#b8860b] text-white border-[#b8860b] shadow-[0_8px_20px_rgba(184,134,11,0.20)] scale-[1.03]'
+                      : 'bg-white/70 text-[#5f4b38] border-[#d9c4a3] hover:bg-[#fff8ef] hover:text-[#b8860b] hover:border-[#d4af37] hover:-translate-y-0.5'
                   }
                 `}
               >
@@ -369,61 +194,19 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
         </div>
 
         {/* MENU GRID */}
-        <div
-          className="
-            grid
-            grid-cols-1
-            md:grid-cols-2
-            lg:grid-cols-3
-            gap-7
-          "
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-7">
           {filteredMenu.map((item) => (
             <div
               key={item.id}
               className="
-                rounded-[1.75rem]
-                overflow-hidden
-                flex
-                flex-col
-                justify-between
-                group
-                relative
-                bg-[#fffdf9]
-                border
-                border-[#d9c4a3]
-                shadow-[0_12px_35px_rgba(92,58,28,0.08)]
-                transition-all
-                duration-300
-                hover:-translate-y-1.5
-                hover:border-[#d4af37]/70
-                hover:shadow-[0_20px_45px_rgba(184,134,11,0.14)]
+                rounded-[1.75rem] overflow-hidden flex flex-col justify-between group relative bg-[#fffdf9]
+                border border-[#d9c4a3] shadow-[0_12px_35px_rgba(92,58,28,0.08)] transition-all duration-300
+                hover:-translate-y-1.5 hover:border-[#d4af37]/70 hover:shadow-[0_20px_45px_rgba(184,134,11,0.14)]
               "
             >
               {/* BEST SELLER */}
               {item.isBestSeller && (
-                <div
-                  className="
-                    absolute
-                    top-4
-                    right-4
-                    z-20
-                    flex
-                    items-center
-                    gap-1.5
-                    px-3
-                    py-1.5
-                    rounded-full
-                    bg-gradient-to-r
-                    from-[#d4af37]
-                    to-[#b8860b]
-                    text-[#211409]
-                    text-[10px]
-                    font-black
-                    tracking-wide
-                    shadow-lg
-                  "
-                >
+                <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#d4af37] to-[#b8860b] text-[#211409] text-[10px] font-black tracking-wide shadow-lg">
                   <Sparkles className="w-3 h-3 fill-[#211409]" />
                   <span>BEST SELLER</span>
                 </div>
@@ -431,149 +214,44 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
 
               <div>
                 {/* PRODUCT IMAGE */}
-                <div
-                  className="
-                    relative
-                    h-60
-                    sm:h-64
-                    overflow-hidden
-                    bg-[#efe2cf]
-                  "
-                >
+                <div className="relative h-60 sm:h-64 overflow-hidden bg-[#efe2cf]">
                   <img
                     src={item.image}
                     alt={item.name}
-                    className="
-                      w-full
-                      h-full
-                      object-cover
-                      object-center
-                      transition-transform
-                      duration-700
-                      ease-out
-                      group-hover:scale-105
-                    "
+                    className="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
                     referrerPolicy="no-referrer"
                   />
 
-                  {/* IMAGE GRADIENT */}
-                  <div
-                    className="
-                      absolute
-                      inset-0
-                      bg-gradient-to-t
-                      from-black/35
-                      via-transparent
-                      to-transparent
-                    "
-                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
 
                   {/* RATING */}
-                  <div
-                    className="
-                      absolute
-                      bottom-4
-                      left-4
-                      flex
-                      items-center
-                      gap-1.5
-                      px-3
-                      py-1.5
-                      rounded-full
-                      bg-white/90
-                      backdrop-blur-md
-                      border
-                      border-white/60
-                      shadow-md
-                    "
-                  >
-                    <Star
-                      className="
-                        w-3.5
-                        h-3.5
-                        text-[#b8860b]
-                        fill-[#d4af37]
-                      "
-                    />
-
-                    <span className="text-xs font-black text-[#2d1b12]">
-                      {item.rating}
-                    </span>
-
-                    <span className="text-[10px] text-[#806c58] font-medium">
-                      ({item.reviewsCount})
-                    </span>
+                  <div className="absolute bottom-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-white/60 shadow-md">
+                    <Star className="w-3.5 h-3.5 text-[#b8860b] fill-[#d4af37]" />
+                    <span className="text-xs font-black text-[#2d1b12]">{item.rating}</span>
+                    <span className="text-[10px] text-[#806c58] font-medium">({item.reviewsCount})</span>
                   </div>
                 </div>
 
                 {/* CARD BODY */}
                 <div className="p-6">
-
                   <div className="flex items-start gap-3 mb-3">
-                    <div
-                      className="
-                        w-10
-                        h-10
-                        rounded-xl
-                        bg-[#fff3df]
-                        border
-                        border-[#d4af37]/30
-                        flex
-                        items-center
-                        justify-center
-                        shrink-0
-                        transition-all
-                        duration-300
-                        group-hover:bg-[#ffedcc]
-                      "
-                    >
+                    <div className="w-10 h-10 rounded-xl bg-[#fff3df] border border-[#d4af37]/30 flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#ffedcc]">
                       <Coffee className="w-5 h-5 text-[#b8860b]" />
                     </div>
 
                     <div>
-                      <span
-                        className="
-                          block
-                          text-[10px]
-                          uppercase
-                          tracking-[0.16em]
-                          font-extrabold
-                          text-[#b8860b]
-                          mb-1
-                        "
-                      >
+                      <span className="block text-[10px] uppercase tracking-[0.16em] font-extrabold text-[#b8860b] mb-1">
                         Arumeya Collection
                       </span>
 
-                      <h3
-                        className="
-                          text-xl
-                          sm:text-2xl
-                          font-black
-                          tracking-tight
-                          leading-tight
-                          text-[#2d1b12]
-                          transition-colors
-                          duration-300
-                          group-hover:text-[#b8860b]
-                        "
-                      >
+                      <h3 className="text-xl sm:text-2xl font-black tracking-tight leading-tight text-[#2d1b12] transition-colors duration-300 group-hover:text-[#b8860b]">
                         {item.name}
                       </h3>
                     </div>
                   </div>
 
                   {/* DESCRIPTION */}
-                  <p
-                    className="
-                      text-sm
-                      text-[#705d49]
-                      font-medium
-                      leading-relaxed
-                      line-clamp-2
-                      mb-4
-                    "
-                  >
+                  <p className="text-sm text-[#705d49] font-medium leading-relaxed line-clamp-2 mb-4">
                     {item.description}
                   </p>
 
@@ -583,17 +261,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                       {item.tags.map((tag) => (
                         <span
                           key={tag}
-                          className="
-                            text-[10px]
-                            font-bold
-                            px-2.5
-                            py-1
-                            rounded-full
-                            bg-[#fff4e2]
-                            text-[#9b7000]
-                            border
-                            border-[#d4af37]/20
-                          "
+                          className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#fff4e2] text-[#9b7000] border border-[#d4af37]/20"
                         >
                           {tag}
                         </span>
@@ -604,89 +272,50 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
               </div>
 
               {/* CARD FOOTER */}
-              <div
-                className="
-                  px-6
-                  pb-6
-                  pt-5
-                  border-t
-                  border-[#e5d5be]
-                  flex
-                  items-center
-                  justify-between
-                  gap-4
-                "
-              >
+              <div className="px-6 pb-6 pt-5 border-t border-[#e5d5be] flex items-center justify-between gap-3">
                 {/* PRICE */}
                 <div>
-                  <span
-                    className="
-                      text-[10px]
-                      text-[#8e7863]
-                      uppercase
-                      tracking-[0.12em]
-                      font-bold
-                      block
-                      mb-0.5
-                    "
-                  >
+                  <span className="text-[10px] text-[#8e7863] uppercase tracking-[0.12em] font-bold block mb-0.5">
                     Harga
                   </span>
-
-                  <span
-                    className="
-                      text-xl
-                      sm:text-2xl
-                      font-black
-                      text-[#b8860b]
-                    "
-                  >
+                  <span className="text-xl sm:text-2xl font-black text-[#b8860b]">
                     {item.formattedPrice}
                   </span>
                 </div>
 
-                {/* ORDER BUTTON */}
-                <button
-                  onClick={() => onSelectMenu(item)}
-                  className="
-                    bg-gradient-to-r
-                    from-[#c99c22]
-                    via-[#d8af3d]
-                    to-[#b8860b]
-                    hover:brightness-105
-                    px-5
-                    py-3
-                    rounded-xl
-                    text-xs
-                    sm:text-sm
-                    font-black
-                    text-[#211409]
-                    flex
-                    items-center
-                    gap-2
-                    shadow-[0_8px_22px_rgba(184,134,11,0.18)]
-                    hover:-translate-y-0.5
-                    transition-all
-                    duration-300
-                    group/btn
-                  "
-                >
-                  <ShoppingBag
+                {/* BUTTON ACTIONS (QUICK ADD + DETAIL) */}
+                <div className="flex items-center gap-2">
+                  {/* QUICK ADD TO CART */}
+                  <button
+                    type="button"
+                    onClick={() => (onAddToCart ? onAddToCart(item) : onSelectMenu(item))}
+                    title="Tambah Langsung ke Keranjang"
                     className="
-                      w-4
-                      h-4
-                      group-hover/btn:scale-110
-                      transition-transform
+                      bg-[#fff4e2] hover:bg-[#ffe3b8] text-[#b8860b] border border-[#d4af37]/40
+                      p-3 rounded-xl transition-all duration-200 active:scale-95 flex items-center justify-center
                     "
-                  />
+                  >
+                    <Plus className="w-4 h-4 font-bold" />
+                  </button>
 
-                  <span>Pesan</span>
-                </button>
+                  {/* OPEN ORDER MODAL / CUSTOMIZE */}
+                  <button
+                    type="button"
+                    onClick={() => onSelectMenu(item)}
+                    className="
+                      bg-gradient-to-r from-[#c99c22] via-[#d8af3d] to-[#b8860b] hover:brightness-105
+                      px-4 py-3 rounded-xl text-xs sm:text-sm font-black text-[#211409] flex items-center gap-1.5
+                      shadow-[0_8px_22px_rgba(184,134,11,0.18)] hover:-translate-y-0.5 transition-all duration-300
+                    "
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>Pesan</span>
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
-
       </div>
     </section>
   );
