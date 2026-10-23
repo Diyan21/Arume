@@ -137,39 +137,39 @@ export const COFFEE_MENU: CoffeeMenuItem[] = [
 
   {
     id: 'prod-07',
-    name: 'Arume Toraja Blend 500g',
+    name: 'All Arumeya Coffee 500g',
     description:
       'Kopi Toraja racikan ARUME dengan perpaduan Arabica dan Robusta pilihan. Menghadirkan aroma kopi yang kuat, rasa bold namun tetap smooth dan seimbang. Pilihan lebih hemat untuk pecinta kopi yang menikmati kopi setiap hari.',
-    price: 105000,
-    formattedPrice: 'Rp105.000',
+    price: 35000,
+    formattedPrice: 'Rp35.000',
     image:
       '/images/menu/arume-toraja-500g.jpg',
     category: 'Coffee Beans',
     rating: 4.9,
     reviewsCount: 0,
     tags: [
-      'Toraja',
+      'All Arumeya Coffee 500g',
       'Arabica & Robusta',
-      '500g',
+      '500ml',
     ],
   },
 
   {
     id: 'prod-08',
-    name: 'Arume Toraja Blend 1kg',
+    name: 'All Arumeya Coffee 500g',
     description:
       'Kopi Toraja racikan ARUME dengan perpaduan Arabica dan Robusta pilihan dalam kemasan 1 kg. Aroma kuat, body mantap, serta rasa yang smooth dan seimbang. Cocok untuk kebutuhan rumah, kantor, maupun usaha.',
-    price: 200000,
-    formattedPrice: 'Rp200.000',
+    price: 70.000,
+    formattedPrice: 'Rp70.000',
     image:
       '/images/menu/arume-toraja-1kg.jpg',
     category: 'Coffee Beans',
     rating: 4.9,
     reviewsCount: 0,
     tags: [
-      'Toraja',
+      'All Arumeya Coffee 500g',
       'Arabica & Robusta',
-      '1kg',
+      '1000ml',
       'Best Value',
     ],
   },
