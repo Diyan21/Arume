@@ -5,18 +5,15 @@ import {
   Star,
   ShoppingBag,
   Sparkles,
-  Plus
 } from 'lucide-react';
 import { CoffeeMenuItem } from '../types';
 
 interface MenuSectionProps {
   onSelectMenu: (item: CoffeeMenuItem) => void;
-  onAddToCart?: (item: CoffeeMenuItem) => void;
 }
 
 export const MenuSection: React.FC<MenuSectionProps> = ({
   onSelectMenu,
-  onAddToCart
 }) => {
   const [activeMenu, setActiveMenu] = useState<string>('all');
 
@@ -272,7 +269,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
               </div>
 
               {/* CARD FOOTER */}
-              <div className="px-6 pb-6 pt-5 border-t border-[#e5d5be] flex items-center justify-between gap-3">
+              <div className="px-6 pb-6 pt-5 border-t border-[#e5d5be] flex items-center justify-between gap-4">
                 {/* PRICE */}
                 <div>
                   <span className="text-[10px] text-[#8e7863] uppercase tracking-[0.12em] font-bold block mb-0.5">
@@ -283,35 +280,19 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
                   </span>
                 </div>
 
-                {/* BUTTON ACTIONS (QUICK ADD + DETAIL) */}
-                <div className="flex items-center gap-2">
-                  {/* QUICK ADD TO CART */}
-                  <button
-                    type="button"
-                    onClick={() => (onAddToCart ? onAddToCart(item) : onSelectMenu(item))}
-                    title="Tambah Langsung ke Keranjang"
-                    className="
-                      bg-[#fff4e2] hover:bg-[#ffe3b8] text-[#b8860b] border border-[#d4af37]/40
-                      p-3 rounded-xl transition-all duration-200 active:scale-95 flex items-center justify-center
-                    "
-                  >
-                    <Plus className="w-4 h-4 font-bold" />
-                  </button>
-
-                  {/* OPEN ORDER MODAL / CUSTOMIZE */}
-                  <button
-                    type="button"
-                    onClick={() => onSelectMenu(item)}
-                    className="
-                      bg-gradient-to-r from-[#c99c22] via-[#d8af3d] to-[#b8860b] hover:brightness-105
-                      px-4 py-3 rounded-xl text-xs sm:text-sm font-black text-[#211409] flex items-center gap-1.5
-                      shadow-[0_8px_22px_rgba(184,134,11,0.18)] hover:-translate-y-0.5 transition-all duration-300
-                    "
-                  >
-                    <ShoppingBag className="w-4 h-4" />
-                    <span>Pesan</span>
-                  </button>
-                </div>
+                {/* SINGLE ORDER BUTTON (TRIGGERS MODAL) */}
+                <button
+                  type="button"
+                  onClick={() => onSelectMenu(item)}
+                  className="
+                    bg-gradient-to-r from-[#c99c22] via-[#d8af3d] to-[#b8860b] hover:brightness-105
+                    px-5 py-3 rounded-xl text-xs sm:text-sm font-black text-[#211409] flex items-center gap-2
+                    shadow-[0_8px_22px_rgba(184,134,11,0.18)] hover:-translate-y-0.5 transition-all duration-300
+                  "
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  <span>Pesan</span>
+                </button>
               </div>
             </div>
           ))}
