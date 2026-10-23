@@ -120,7 +120,7 @@ export default function App() {
     });
   };
 
-  // Langsung checkout 1 item dari OrderModal (opsional)
+  // Langsung checkout 1 item dari OrderModal
   const handleDirectCheckout = (customizedItem: any) => {
     handleAddToCart(customizedItem);
     setIsCheckoutModalOpen(true);
@@ -217,7 +217,7 @@ export default function App() {
       } catch (error) {
         console.error('Initialize customer auth error:', error);
         if (active) setCustomerProfile(null);
-      } font-medium {
+      } finally {
         if (active) setCustomerAuthLoading(false);
       }
     };
@@ -345,7 +345,6 @@ export default function App() {
 
         <MenuSection
           onSelectMenu={(item) => {
-            // Buka OrderModal kustomisasi per item
             setSelectedItem(item);
           }}
         />
