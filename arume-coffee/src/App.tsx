@@ -50,7 +50,7 @@ import {
    ========================================================= */
 
 const STORE_LOCATION = {
-  name: 'Arume Coffee',
+  name: 'Arumeya Coffee',
   address: 'Madrasah Ibtidaiyah Negeri 7, Cengkareng Timur, Jakarta Barat 11730',
   latitude: -6.145680,
   longitude: 106.736081,
