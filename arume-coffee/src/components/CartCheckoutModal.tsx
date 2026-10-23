@@ -411,15 +411,27 @@ export const CartCheckoutModal: React.FC<CartCheckoutModalProps> = ({
         return;
       }
 
-      // Ambil Link Xendit
+      // Deteksi semua kemungkinan nama field URL Xendit dari response Worker
       const paymentUrl =
         paymentResult?.data?.redirect_url ||
         paymentResult?.data?.payment_link_url ||
+        paymentResult?.data?.invoice_url ||
+        paymentResult?.data?.payment_url ||
+        paymentResult?.data?.url ||
+        paymentResult?.data?.payment?.redirect_url ||
+        paymentResult?.data?.payment?.payment_link_url ||
+        paymentResult?.data?.payment?.invoice_url ||
         paymentResult?.redirect_url ||
-        paymentResult?.payment_link_url;
+        paymentResult?.payment_link_url ||
+        paymentResult?.invoice_url ||
+        paymentResult?.payment_url ||
+        paymentResult?.url ||
+        paymentResult?.payment?.redirect_url ||
+        paymentResult?.payment?.invoice_url ||
+        paymentResult?.actions?.[0]?.url;
 
       if (!paymentUrl) {
-        alert('URL Pembayaran Xendit tidak ditemukan pada response server.');
+        alert('Format Response Xendit dari Server:\n' + JSON.stringify(paymentResult, null, 2));
         setLoading(false);
         return;
       }
