@@ -75,8 +75,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="glass-card max-w-lg w-full rounded-3xl overflow-hidden border border-[#d4af37]/40 shadow-2xl relative bg-[#140e0a] animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="w-full max-w-md max-h-[90vh] rounded-3xl overflow-hidden border border-[#d4af37]/40 shadow-2xl relative bg-[#140e0a] animate-in zoom-in-95 duration-300 flex flex-col mx-2 sm:mx-0">
         
         {/* CLOSE BUTTON */}
         <button
@@ -88,7 +88,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         </button>
 
         {/* HEADER IMAGE & PRODUCT INFO */}
-        <div className="relative h-48 sm:h-56 overflow-hidden">
+        <div className="relative h-44 sm:h-52 overflow-hidden shrink-0">
           <img
             src={item.image}
             alt={item.name}
@@ -97,12 +97,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#140e0a] via-[#140e0a]/40 to-transparent" />
 
-          <div className="absolute bottom-4 left-6 right-6 flex items-end justify-between gap-4">
+          <div className="absolute bottom-3 left-4 right-4 sm:bottom-4 sm:left-6 sm:right-6 flex items-end justify-between gap-4">
             <div>
               <span className="text-xs px-2.5 py-1 rounded-md bg-[#d4af37] text-black font-bold uppercase tracking-wider mb-1 inline-block">
                 {item.category}
               </span>
-              <h3 className="font-display text-2xl font-bold text-white">
+              <h3 className="font-display text-xl sm:text-2xl font-bold text-white">
                 {item.name}
               </h3>
             </div>
@@ -111,7 +111,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               <span className="text-xs text-[#a09080] block">
                 Harga Satuan
               </span>
-              <span className="font-display text-2xl font-bold gold-gradient-text">
+              <span className="font-display text-xl sm:text-2xl font-bold gold-gradient-text">
                 {item.formattedPrice}
               </span>
             </div>
@@ -119,8 +119,8 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         </div>
 
         {/* BODY CUSTOMIZATION FORM */}
-        <div className="p-6 space-y-5 max-h-[55vh] overflow-y-auto custom-scrollbar">
-          <p className="text-sm text-[#c2b4a3] font-light leading-relaxed">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto custom-scrollbar flex-1">
+          <p className="text-xs sm:text-sm text-[#c2b4a3] font-light leading-relaxed">
             {item.description}
           </p>
 
@@ -200,7 +200,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         </div>
 
         {/* FOOTER ACTIONS */}
-        <div className="p-5 border-t border-[#2a2018] bg-[#120d09]/95 space-y-4">
+        <div className="p-4 sm:p-5 border-t border-[#2a2018] bg-[#120d09]/95 space-y-3 shrink-0">
           <div className="flex justify-between items-end">
             <div>
               <span className="text-[11px] text-[#8e8072] uppercase block">
@@ -211,7 +211,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
               </span>
             </div>
 
-            <span className="font-display text-2xl font-bold gold-gradient-text">
+            <span className="font-display text-xl sm:text-2xl font-bold gold-gradient-text">
               {formattedSubtotal}
             </span>
           </div>
