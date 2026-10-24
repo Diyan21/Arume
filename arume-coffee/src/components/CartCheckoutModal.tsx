@@ -449,20 +449,20 @@ export const CartCheckoutModal: React.FC<CartCheckoutModalProps> = ({
   };
 
   /* =========================================================
-     RENDER UI
+     RENDER UI (DIPERBAIKI UKURANNYA AGAR TIDAK NGE-ZOOM DI HP)
      ========================================================= */
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="glass-card max-w-lg w-full rounded-3xl overflow-hidden border border-[#d4af37]/40 shadow-2xl relative bg-[#140e0a] animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="w-full max-w-md max-h-[88vh] sm:max-h-[90vh] rounded-3xl overflow-hidden border border-[#d4af37]/40 shadow-2xl relative bg-[#140e0a] animate-in zoom-in-95 duration-300 flex flex-col mx-2 sm:mx-0">
         
         {/* HEADER */}
-        <div className="p-5 border-b border-[#2a2018] flex items-center justify-between shrink-0 bg-[#120d09]">
+        <div className="p-4 sm:p-5 border-b border-[#2a2018] flex items-center justify-between shrink-0 bg-[#120d09]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37]">
               <ShoppingBag className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white leading-tight">
+              <h3 className="text-sm sm:text-base font-bold text-white leading-tight">
                 Ringkasan Pesanan Keranjang
               </h3>
               <p className="text-[11px] text-[#8e8072]">
@@ -481,7 +481,7 @@ export const CartCheckoutModal: React.FC<CartCheckoutModalProps> = ({
         </div>
 
         {/* SCROLLABLE BODY */}
-        <div className="p-6 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto custom-scrollbar flex-1">
           
           {/* DAFTAR ITEM DI KERANJANG */}
           <div className="space-y-3">
@@ -679,7 +679,7 @@ export const CartCheckoutModal: React.FC<CartCheckoutModalProps> = ({
         </div>
 
         {/* FIXED FOOTER */}
-        <div className="p-5 border-t border-[#2a2018] bg-[#120d09]/95 shrink-0 space-y-3">
+        <div className="p-4 sm:p-5 border-t border-[#2a2018] bg-[#120d09]/95 shrink-0 space-y-3">
           <div className="flex justify-between items-end">
             <div>
               <div className="text-[11px] text-[#8e8072] space-y-0.5">
@@ -691,7 +691,7 @@ export const CartCheckoutModal: React.FC<CartCheckoutModalProps> = ({
               </span>
             </div>
 
-            <span className="font-display text-2xl font-bold gold-gradient-text">
+            <span className="font-display text-xl sm:text-2xl font-bold gold-gradient-text">
               {formattedGrandTotal}
             </span>
           </div>
