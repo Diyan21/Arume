@@ -46,6 +46,15 @@ import {
 
 
 /* =========================================================
+   API CONFIG (SUPAYA TIDAK FAILED TO FETCH DI HP CLIENT)
+   ========================================================= */
+
+export const API_URL = 
+  (import.meta as any).env?.VITE_API_URL || 
+  'https://arume-coffee-api-2.diyanaxl.workers.dev';
+
+
+/* =========================================================
    STORE LOCATION
    ========================================================= */
 
