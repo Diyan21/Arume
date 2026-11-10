@@ -337,7 +337,7 @@ export default function App() {
     <div 
       className="min-h-screen text-[#f3ece2] font-sans selection:bg-[#d4af37] selection:text-black relative pb-24 bg-cover bg-center bg-no-repeat"
       style={{ 
-        backgroundImage: `linear-gradient(to bottom, rgba(10, 8, 6, 0.92), rgba(10, 8, 6, 0.97)), url('/images/arume-logo.png')` 
+        backgroundImage: `linear-gradient(to bottom, rgba(10, 8, 6, 0.92), rgba(10, 8, 6, 0.97)), url('/arume-logo.png')` 
       }}
     >
 
